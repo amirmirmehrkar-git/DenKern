@@ -1,0 +1,26 @@
+---
+description: DenkKern knowledge base rules for Cursor
+globs:
+  - "**/*.md"
+alwaysApply: true
+---
+
+# DenkKern Knowledge Base Rules
+
+This workspace is a Markdown knowledge base for DenkKern.
+
+When editing:
+
+- Read `README.md`, `00-index.md`, and `11-knowledge-management-rules.md`.
+- Use standard Markdown links, not Obsidian-only wikilinks.
+- Keep YAML frontmatter at the top of notes.
+- Update existing topic files before creating new files.
+- Create new files with the next numeric prefix when a topic is genuinely new.
+- Preserve contradictions with `Version 1`, `Version 2`, and a resolution status.
+- Attribute statements to Amir, James, Nick / Nic, or AI when clear.
+- Keep the MVP focus on the Lena 2.0 manufacturing disruption workflow.
+
+Strategic rule:
+
+Stop refining architecture. Validate customer evidence.
+
