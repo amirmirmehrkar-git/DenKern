@@ -1,0 +1,30 @@
+{
+  "_comment": "ERP context for SHIP-001 — mock adapter output. See docs/architecture/06-data-contracts.md §2",
+  "shipment_id": "SHIP-001",
+  "shipment_name": "Marine Bolts — MSC Barcelona",
+  "vessel_name": "MSC Barcelona",
+  "current_location": "Southern coast of Spain",
+  "destination": "Hamburg",
+  "customer_id": "CUST-001",
+  "production_context": {
+    "daily_downtime_cost_eur": 150000,
+    "critical_part": "Marine-quality bolts",
+    "required_by": "2026-05-28"
+  },
+  "inventory": {
+    "replacement_available": true,
+    "replacement_location": "Poland warehouse",
+    "replacement_cost_eur": 500000,
+    "replacement_arrival_date": "2026-05-27"
+  },
+  "freight_options": [
+    {
+      "option_id": "FRT-AMS-001",
+      "from": "Amsterdam",
+      "to": "Hamburg",
+      "cost_eur": 200000,
+      "estimated_arrival_date": "2026-05-30",
+      "confidence_score": 0.70
+    }
+  ]
+}

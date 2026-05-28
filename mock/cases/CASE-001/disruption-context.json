@@ -1,0 +1,73 @@
+{
+  "_comment": "Assembled disruption context for CASE-001 — snapshotted at context_confirmed. See docs/architecture/06-data-contracts.md §4",
+  "case_id": "CASE-001",
+  "shipment_id": "SHIP-001",
+  "assembled_at": "2026-05-25T08:32:00Z",
+  "prediction": {
+    "shipment_id": "SHIP-001",
+    "model_version": "eta-delay-v0.1",
+    "generated_at": "2026-05-25T08:30:00Z",
+    "eta": {
+      "baseline":    "2026-05-28",
+      "expected":    "2026-06-02",
+      "optimistic":  "2026-05-30",
+      "pessimistic": "2026-06-06"
+    },
+    "delay": {
+      "expected_delay_days": 5,
+      "p_delay_over_3_days": 0.72,
+      "confidence_score":    0.68
+    },
+    "risk_drivers": [
+      { "type": "strike_risk",         "location": "Hamburg",         "severity": "medium", "estimated_impact_days": 2 },
+      { "type": "port_congestion",     "location": "Amsterdam",       "severity": "low",    "estimated_impact_days": 1 },
+      { "type": "maritime_disruption", "location": "Bay of Biscay",   "severity": "medium", "estimated_impact_days": 2 }
+    ]
+  },
+  "shipment_context": {
+    "shipment_id": "SHIP-001",
+    "shipment_name": "Marine Bolts — MSC Barcelona",
+    "vessel_name": "MSC Barcelona",
+    "current_location": "Southern coast of Spain",
+    "destination": "Hamburg",
+    "customer_id": "CUST-001",
+    "production_context": {
+      "daily_downtime_cost_eur": 150000,
+      "critical_part": "Marine-quality bolts",
+      "required_by": "2026-05-28"
+    },
+    "inventory": {
+      "replacement_available": true,
+      "replacement_location": "Poland warehouse",
+      "replacement_cost_eur": 500000,
+      "replacement_arrival_date": "2026-05-27"
+    },
+    "freight_options": [
+      {
+        "option_id": "FRT-AMS-001",
+        "from": "Amsterdam",
+        "to": "Hamburg",
+        "cost_eur": 200000,
+        "estimated_arrival_date": "2026-05-30",
+        "confidence_score": 0.70
+      }
+    ]
+  },
+  "weather_signal": {
+    "route_id": "route-north-atlantic",
+    "severity": "medium",
+    "description": "Strong westerly winds and 4m swell in Bay of Biscay, expected to persist 48–72h",
+    "estimated_delay_impact_days": 2,
+    "source": "simulated"
+  },
+  "news_signals": [
+    {
+      "region_id": "hamburg-port",
+      "event_type": "strike_risk",
+      "severity": "medium",
+      "description": "Hamburg port workers union announced 48-hour warning strike, effective 2026-05-27",
+      "estimated_delay_impact_days": 2,
+      "source": "simulated"
+    }
+  ]
+}
