@@ -1,0 +1,46 @@
+# Local / temporary fetch artifacts
+chatgpt-share-*.html
+
+# Archive
+archive/
+
+# Obsidian local workspace state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Node / monorepo
+node_modules/
+.turbo/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env*.local
+
+# Editor
+.vscode/settings.json.bak
+
+# Node / monorepo
+node_modules/
+.turbo/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env*.local
+
+# Editor
+.vscode/settings.json.bak
