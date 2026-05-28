@@ -51,4 +51,11 @@ export interface DataAdapter {
    * Real: reads from case database
    */
   getWorkflowState(caseId: string): Promise<WorkflowStateResponse>;
+
+  /**
+   * Persist a new workflow state for a given case.
+   * Mock: updates the in-memory cache (no disk write — state survives the request, not the process)
+   * Real: writes to case database
+   */
+  saveWorkflowState(caseId: string, state: WorkflowStateResponse): Promise<void>;
 }
