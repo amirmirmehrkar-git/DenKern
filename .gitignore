@@ -12,3 +12,25 @@ archive/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Node / monorepo
+node_modules/
+.turbo/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env*.local
+
+# Editor
+.vscode/settings.json.bak
+
+# Sprint 7 additions
+apps/web/next-env.d.ts
+scripts/_tmp-*.mjs
+.cursor/
+prediction/artifacts/
