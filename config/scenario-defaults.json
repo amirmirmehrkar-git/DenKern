@@ -1,0 +1,24 @@
+{
+  "_comment": "Versioned scenario engine configuration. Changes require Amir + Alex alignment. See docs/architecture/03-scenario-engine.md §8.2",
+  "version": "scenario-config-v0.1",
+  "confidence_tiers": {
+    "HIGH":   { "min_score": 0.75, "wait_modifier_increment": 0.0 },
+    "MEDIUM": { "min_score": 0.50, "wait_modifier_increment": 0.1 },
+    "LOW":    { "min_score": 0.0,  "wait_modifier_increment": 0.2 }
+  },
+  "base_risk_modifiers": {
+    "WAIT":    1.2,
+    "REROUTE": 1.1,
+    "REPLACE": 1.0
+  },
+  "strategic_weights_eur": {
+    "WAIT":    0,
+    "REROUTE": 0,
+    "REPLACE": 0
+  },
+  "risk_level_thresholds": {
+    "LOW_max_days":    2,
+    "MEDIUM_max_days": 5
+  },
+  "tiebreak_preference": ["REPLACE", "REROUTE", "WAIT"]
+}

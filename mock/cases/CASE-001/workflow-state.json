@@ -1,0 +1,7 @@
+{
+  "_comment": "Initial workflow state for CASE-001 when the mock adapter is loaded. Used by GET /api/cases/CASE-001/state in dev.",
+  "case_id": "CASE-001",
+  "state": "alert_generated",
+  "available_actions": ["alert_opened"],
+  "updated_at": "2026-05-25T08:31:00Z"
+}
