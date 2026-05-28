@@ -1,0 +1,14 @@
+/**
+ * @denkkern/engine — Public API
+ *
+ * The scenario engine is a pure function:
+ *   runScenarioEngine(ScenarioEngineInput): ScenarioResult
+ *
+ * Import only what you need:
+ *   import { runScenarioEngine } from '@denkkern/engine'
+ */
+
+export { runScenarioEngine, ENGINE_VERSION } from './engine.js';
+
+// Expose helpers used by tests and the API layer
+export { classifyConfidenceTier, classifyRiskLevel, daysBetween, formatEur } from './classify.js';
