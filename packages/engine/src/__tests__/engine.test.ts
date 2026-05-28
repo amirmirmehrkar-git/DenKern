@@ -185,8 +185,17 @@ describe('runScenarioEngine — Lena 2.0 Hamburg case', () => {
   });
 
   // §8.3 case 7: Tiebreak logic resolves correctly
-  it('tiebreak resolves by tiebreak_preference when scores are equal', () => {
-    // Force all final_score_eur to 0 by making all costs 0
+  //
+  // Architecture (03-scenario-engine.md §5):
+  //   1. Sort by final_score_eur ascending
+  //   2. Tie on score → prefer LOWER execution_complexity
+  //   3. Tie on complexity → use tiebreak_preference order
+  //
+  // WAIT=LOW, REROUTE=MEDIUM, REPLACE=HIGH complexity — always different.
+  // So when all final scores are equal, WAIT wins (lowest complexity).
+  // tiebreak_preference ['REPLACE','REROUTE','WAIT'] is the last resort for
+  // scenarios of the SAME type competing (e.g. multiple REROUTE options).
+  it('tiebreak: when all scores equal, WAIT wins on lowest execution_complexity', () => {
     const input: ScenarioEngineInput = {
       ...LENA_INPUT,
       prediction_snapshot: {
@@ -207,9 +216,11 @@ describe('runScenarioEngine — Lena 2.0 Hamburg case', () => {
       ],
     };
     const result = runScenarioEngine(input);
-    // All scores will be 0 — tiebreak_preference is ['REPLACE', 'REROUTE', 'WAIT']
+    // All final_score_eur = 0 → complexity tiebreak applies
+    // WAIT(LOW=0) < REROUTE(MEDIUM=1) < REPLACE(HIGH=2) → WAIT recommended
     const recommended = result.scenarios.find(s => s.recommended)!;
-    expect(recommended.scenario_id).toBe('REPLACE');
+    expect(recommended.scenario_id).toBe('WAIT');
+    expect(recommended.execution_complexity).toBe('LOW');
   });
 
   // §8.3 case 8: recommended flag is set on exactly one scenario
