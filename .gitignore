@@ -34,3 +34,8 @@ apps/web/next-env.d.ts
 scripts/_tmp-*.mjs
 .cursor/
 prediction/artifacts/
+
+# Lockfiles — only the root package-lock.json is canonical.
+# Do not commit nested lockfiles created by running npm install inside packages/.
+packages/*/package-lock.json
+apps/*/package-lock.json

@@ -12,10 +12,8 @@
     "test:watch": "vitest",
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {
-    "@denkkern/types": "*"
-  },
   "devDependencies": {
+    "@denkkern/types": "file:../types",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }
