@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@denkkern/engine": "*",
     "@denkkern/types": "*",
     "next": "^14.2.0",
     "react": "^18.3.0",
