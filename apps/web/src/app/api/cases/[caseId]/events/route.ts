@@ -19,7 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { dispatchWorkflowEvent, DispatchError } from '../../../../lib/workflow/dispatcher.js';
+import { dispatchWorkflowEvent, DispatchError } from '../../../../../lib/workflow/dispatcher.js';
 import type { WorkflowEventPayload, WorkflowStateResponse } from '@denkkern/types';
 
 interface RouteParams {
