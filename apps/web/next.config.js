@@ -25,6 +25,17 @@ const nextConfig = {
      * These packages are not npm-installed; webpack must find them directly.
      * TypeScript paths in tsconfig.json mirror these aliases for IDE support.
      */
+    /**
+     * Allow TypeScript files to be imported with the .js extension.
+     * Required because the project uses ESM-style imports (`.js` suffix on `.ts` files),
+     * which is correct for Node16/bundler moduleResolution but webpack needs
+     * explicit guidance to resolve .js → .ts / .tsx.
+     */
+    config.resolve.extensionAlias = {
+      '.js':  ['.ts', '.tsx', '.js'],
+      '.jsx': ['.tsx', '.jsx'],
+    };
+
     config.resolve.alias = {
       ...config.resolve.alias,
       '@denkkern/types': path.resolve(projectRoot, 'packages/types/src/index.ts'),

@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdapter } from '../../../../lib/adapters/index.js';
+import { getAdapter } from '../../../../../lib/adapters/index.js';
 import type { DisruptionContext } from '@denkkern/types';
 
 interface RouteParams {
