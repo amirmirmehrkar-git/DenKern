@@ -1040,28 +1040,32 @@ body {
   gap: 12px;
 }
 
+/* Savings headline — promoted to primary financial signal */
+.recommendation-card__savings-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0 4px;
+}
+
+.recommendation-card__savings-headline-value {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--success);
+  letter-spacing: -0.5px;
+  font-family: var(--font-mono);
+}
+
+.recommendation-card__savings-headline-label {
+  font-size: var(--text-sm);
+  color: var(--success-text);
+  font-weight: var(--weight-medium);
+}
+
 .recommendation-card__reason {
   font-size: var(--text-sm);
   color: var(--text-primary);
   line-height: 1.5;
-}
-
-.recommendation-card__savings {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.recommendation-card__savings-label {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.recommendation-card__savings-value {
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-  color: var(--success);
-  font-family: var(--font-mono);
 }
 
 .recommendation-card__confidence-note {

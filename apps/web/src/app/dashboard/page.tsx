@@ -20,6 +20,7 @@ import type { DashboardSummary } from '../api/dashboard/route.js';
 import { MetricCard } from '../../components/ui/MetricCard.js';
 import { AlertCard } from '../../components/ui/AlertCard.js';
 import { WorkflowTimeline } from '../../components/ui/WorkflowTimeline.js';
+import { StatusBadge } from '../../components/ui/StatusBadge.js';
 import { useWorkflowState } from '../../hooks/useWorkflowState.js';
 import { STATE_ORDER } from '../../lib/workflow/state-order.js';
 import type { TimelineEvent } from '../../components/ui/WorkflowTimeline.js';
@@ -80,11 +81,7 @@ function CaseRow({ caseId, shipmentId, shipmentName, destination }: {
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {state != null && (
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            {state.replace(/_/g, ' ')}
-          </span>
-        )}
+        {state != null && <StatusBadge status={state} />}
         <span style={{ color: 'var(--text-muted)' }}>›</span>
       </div>
     </Link>

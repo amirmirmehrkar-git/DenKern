@@ -37,6 +37,20 @@ import { STATE_ORDER } from '../../../lib/workflow/state-order.js';
 import type { TimelineEvent } from '../../../components/ui/WorkflowTimeline.js';
 
 // ---------------------------------------------------------------------------
+// UrgencyLine — derived from prediction delay, no additional data fetch
+// ---------------------------------------------------------------------------
+
+function UrgencyLine({ delayDays }: { delayDays: number }) {
+  if (delayDays <= 0) return null;
+  const color = delayDays >= 5 ? 'var(--critical)' : delayDays >= 3 ? 'var(--warning)' : 'var(--text-secondary)';
+  return (
+    <p style={{ marginTop: 6, fontSize: 13, fontWeight: 500, color }}>
+      ⚡ {delayDays}-day predicted delay — every hour of inaction increases exposure
+    </p>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -224,6 +238,8 @@ export default function DecisionRoomPage() {
           <p className="page-subtitle">
             Case {caseId} · Review options and approve a course of action
           </p>
+          {/* Urgency line — uses prediction delay from engine result, no new data needed */}
+          <UrgencyLine delayDays={scenarioResult.assumptions_log.prediction_snapshot.expected_delay_days} />
         </div>
         <StatusBadge status={state ?? 'scenarios_generated'} />
       </div>
@@ -237,7 +253,17 @@ export default function DecisionRoomPage() {
         onSelect={(id) => { void handleScenarioSelect(id); }}
       />
 
-      {/* Timeline */}
+      {/* Decision action panel — above timeline so primary CTA is immediately reachable */}
+      <DecisionActionPanel
+        selectedScenario={selectedScenario}
+        canConfirm={canConfirm}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        onConfirm={() => { void handleDecisionConfirm(); }}
+        onChangeScenario={() => setSelectedScenarioId(null)}
+      />
+
+      {/* Timeline — audit context, below CTA */}
       <div className="card mb-6" style={{ marginTop: 24 }}>
         <div className="card-header">
           <span className="card-title">Case timeline</span>
@@ -249,16 +275,6 @@ export default function DecisionRoomPage() {
           />
         </div>
       </div>
-
-      {/* Decision action panel */}
-      <DecisionActionPanel
-        selectedScenario={selectedScenario}
-        canConfirm={canConfirm}
-        isSubmitting={isSubmitting}
-        submitError={submitError}
-        onConfirm={() => { void handleDecisionConfirm(); }}
-        onChangeScenario={() => setSelectedScenarioId(null)}
-      />
     </>
   );
 }
