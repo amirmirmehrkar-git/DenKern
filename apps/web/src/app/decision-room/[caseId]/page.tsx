@@ -27,7 +27,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import type { ScenarioResult, Scenario } from '@denkkern/types';
+import type { ScenarioResult, Scenario, WorkflowState } from '@denkkern/types';
 import { useWorkflowState } from '../../../hooks/useWorkflowState.js';
 import { ScenarioComparisonMatrix } from '../../../components/decision/ScenarioComparisonMatrix.js';
 import { DecisionActionPanel } from '../../../components/decision/DecisionActionPanel.js';
@@ -165,13 +165,15 @@ export default function DecisionRoomPage() {
   }
 
   // ── Build timeline ────────────────────────────────────────────────────────
-  const timelineEvents: TimelineEvent[] = [
-    { state: 'disruption_context_opened' },
-    { state: 'scenarios_generated' },
-    { state: 'recommendation_ranked' },
-    { state: 'decision_pending' },
-    { state: 'decision_approved' },
-  ].filter((e): e is TimelineEvent =>
+  const timelineEvents: TimelineEvent[] = (
+    [
+      { state: 'disruption_context_opened' as WorkflowState },
+      { state: 'scenarios_generated'       as WorkflowState },
+      { state: 'recommendation_ranked'     as WorkflowState },
+      { state: 'decision_pending'          as WorkflowState },
+      { state: 'decision_approved'         as WorkflowState },
+    ] satisfies TimelineEvent[]
+  ).filter((e) =>
     state != null && STATE_ORDER[e.state] <= STATE_ORDER[state]
   );
 
