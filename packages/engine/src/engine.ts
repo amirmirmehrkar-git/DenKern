@@ -38,7 +38,7 @@ export function runScenarioEngine(input: ScenarioEngineInput): ScenarioResult {
     scenario_config,
   } = input;
 
-  const { delay, risk_drivers } = prediction_snapshot;
+  const { delay } = prediction_snapshot;
   const { daily_downtime_cost_eur, required_by, inventory } = erp_context;
 
   const confidence_tier = classifyConfidenceTier(delay.confidence_score, scenario_config);
@@ -106,7 +106,7 @@ export function runScenarioEngine(input: ScenarioEngineInput): ScenarioResult {
         config: scenario_config,
         data_sources: [
           ...baseSources,
-          `Freight option ${bestFreight.option_id} (${bestFreight.source ?? 'simulated'})`,
+          `Freight option ${bestFreight.option_id} (simulated)`,
         ],
       })
     );

@@ -15,11 +15,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { WorkflowState } from '@denkkern/types';
 import type { DashboardSummary } from '../api/dashboard/route.js';
 import { MetricCard } from '../../components/ui/MetricCard.js';
 import { AlertCard } from '../../components/ui/AlertCard.js';
 import { WorkflowTimeline } from '../../components/ui/WorkflowTimeline.js';
 import { useWorkflowState } from '../../hooks/useWorkflowState.js';
+import { STATE_ORDER } from '../../lib/workflow/state-order.js';
 import type { TimelineEvent } from '../../components/ui/WorkflowTimeline.js';
 
 // ---------------------------------------------------------------------------
@@ -105,18 +107,15 @@ export default function DashboardPage() {
   );
 
   // Build a minimal timeline from what we know
+  const ALL_TIMELINE_EVENTS: TimelineEvent[] = [
+    { state: 'monitoring_active'   as WorkflowState, occurred_at: '2026-05-25T08:00:00Z' },
+    { state: 'disruption_detected' as WorkflowState, occurred_at: '2026-05-25T08:28:00Z' },
+    { state: 'alert_generated'     as WorkflowState, occurred_at: '2026-05-25T08:31:00Z', actor: 'system' },
+  ];
   const timelineEvents: TimelineEvent[] = demoCase != null
-    ? [
-      { state: 'monitoring_active', occurred_at: '2026-05-25T08:00:00Z' },
-      { state: 'disruption_detected', occurred_at: '2026-05-25T08:28:00Z' },
-      { state: 'alert_generated', occurred_at: '2026-05-25T08:31:00Z', actor: 'system' },
-    ].filter(e => {
-      // Only show states up to and including current
-      const states = ['monitoring_active','disruption_detected','alert_generated','disruption_context_opened','scenarios_generated','recommendation_ranked','decision_pending','decision_approved','execution_started','execution_monitoring','audit_logged','closed'];
-      const currentIdx = states.indexOf(demoCase.state);
-      const evIdx = states.indexOf(e.state);
-      return evIdx <= currentIdx;
-    })
+    ? ALL_TIMELINE_EVENTS.filter(
+        (e) => STATE_ORDER[e.state] <= STATE_ORDER[demoCase.state]
+      )
     : [];
 
   if (isLoading) {
