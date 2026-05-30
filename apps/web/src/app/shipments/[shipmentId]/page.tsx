@@ -21,7 +21,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import type { DisruptionContext, AlertEvent } from '@denkkern/types';
+import type { DisruptionContext, AlertEvent, WorkflowState } from '@denkkern/types';
 import { useWorkflowState } from '../../../hooks/useWorkflowState.js';
 import { PredictionSignalPanel } from '../../../components/panels/PredictionSignalPanel.js';
 import { BusinessContextPanel } from '../../../components/panels/BusinessContextPanel.js';
@@ -126,12 +126,14 @@ export default function ShipmentDisruptionDetailPage() {
   }
 
   // ── Build timeline events ────────────────────────────────────────────────
-  const timelineEvents: TimelineEvent[] = [
-    { state: 'monitoring_active',   occurred_at: '2026-05-25T08:00:00Z' },
-    { state: 'disruption_detected', occurred_at: '2026-05-25T08:28:00Z' },
-    { state: 'alert_generated',     occurred_at: alert?.triggered_at },
-    { state: 'disruption_context_opened' },
-  ].filter((e): e is TimelineEvent =>
+  const timelineEvents: TimelineEvent[] = (
+    [
+      { state: 'monitoring_active'          as WorkflowState, occurred_at: '2026-05-25T08:00:00Z' },
+      { state: 'disruption_detected'        as WorkflowState, occurred_at: '2026-05-25T08:28:00Z' },
+      { state: 'alert_generated'            as WorkflowState, ...(alert?.triggered_at != null ? { occurred_at: alert.triggered_at } : {}) },
+      { state: 'disruption_context_opened'  as WorkflowState },
+    ] satisfies TimelineEvent[]
+  ).filter((e) =>
     state != null && STATE_ORDER[e.state] <= STATE_ORDER[state]
   );
 

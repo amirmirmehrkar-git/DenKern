@@ -105,7 +105,6 @@ export function scoreScenario(input: ScoreInput): Scenario {
     base_risk_modifier,
     confidence_increment,
     confidence_tier,
-    isWait,
     scenario_type
   );
 
@@ -178,7 +177,6 @@ function buildRiskModifierReason(
   base: number,
   increment: number,
   tier: ConfidenceTier,
-  isWait: boolean,
   type: ScenarioType
 ): string {
   if (type === 'replace') {
@@ -191,7 +189,6 @@ function buildRiskModifierReason(
   if (increment === 0) {
     return `Delay risk modifier ×${base.toFixed(1)} (delays commonly exceed prediction) — confidence HIGH, no uncertainty increment`;
   }
-  const effective = base + increment;
   return (
     `Delay risk modifier ×${base.toFixed(1)} (delays commonly exceed prediction) ` +
     `+ ${increment.toFixed(1)} uncertainty increment (prediction confidence: ${tierLabel(tier)})`
