@@ -38,4 +38,17 @@ prediction/artifacts/
 # Lockfiles — only the root package-lock.json is canonical.
 # Do not commit nested lockfiles created by running npm install inside packages/.
 packages/*/package-lock.json
+
 apps/*/package-lock.json
+
+apps/*/package-lock.json
+
+# ML model artifacts — never commit binary model files
+*.pt
+*.pth
+*.ckpt
+*.onnx
+prediction/artifacts/
+contracts/prediction/artifacts/
+packages/prediction-adapter/models/
+
