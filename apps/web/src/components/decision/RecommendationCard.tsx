@@ -38,16 +38,17 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
       </div>
 
       <div className="recommendation-card__body">
-        <p className="recommendation-card__reason">{recommendation.reason}</p>
-
-        <div className="recommendation-card__savings">
-          <span className="recommendation-card__savings-label">
-            Estimated savings vs. WAIT
-          </span>
-          <span className="recommendation-card__savings-value">
+        {/* Savings headline — primary financial signal, promoted to large display */}
+        <div className="recommendation-card__savings-headline">
+          <span className="recommendation-card__savings-headline-value">
             {formatEur(recommendation.estimated_savings_vs_waiting_eur)}
           </span>
+          <span className="recommendation-card__savings-headline-label">
+            estimated savings vs. waiting
+          </span>
         </div>
+
+        <p className="recommendation-card__reason">{recommendation.reason}</p>
 
         {recommendation.confidence_note && (
           <p className="recommendation-card__confidence-note">
