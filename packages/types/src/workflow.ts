@@ -26,7 +26,10 @@ export type WorkflowState =
   | 'scenarios_generated'
   | 'recommendation_ranked'
   | 'decision_pending'
-  | 'decision_approved'        // STATE — entered after `decision_confirmed` event
+  | 'decision_approved'           // STATE — entered after `decision_confirmed` event
+  | 'second_approval_pending'     // STATE — entered when approval gate threshold is crossed
+  | 'second_approval_confirmed'   // STATE — supervisor approved; ready for execution
+  | 'second_approval_rejected'    // STATE — supervisor rejected; Lena may re-select
   | 'execution_started'
   | 'execution_monitoring'
   | 'audit_logged'
@@ -43,7 +46,10 @@ export type WorkflowEvent =
   | 'context_confirmed'
   | 'scenarios_requested'
   | 'scenario_selected'
-  | 'decision_confirmed'        // EVENT — fired by user; transitions to `decision_approved` state
+  | 'decision_confirmed'          // EVENT — fired by user (Lena); transitions to `decision_approved`
+  | 'second_approval_required'    // EVENT — fired by system (dispatcher consequence); transitions to `second_approval_pending`
+  | 'second_approval_confirmed'   // EVENT — fired by supervisor (NEVER 'lena' or 'system') — architecture rule C2
+  | 'second_approval_rejected'    // EVENT — fired by supervisor; transitions to `second_approval_rejected`
   | 'execution_triggered'
   | 'execution_step_updated'
   | 'audit_completed'
@@ -72,7 +78,20 @@ export const WORKFLOW_TRANSITIONS: TransitionMap = {
     decision_confirmed: 'decision_approved',
     scenario_selected: 'recommendation_ranked',
   },
-  decision_approved:         { execution_triggered: 'execution_started' },
+  decision_approved: {
+    // Dispatcher fires `second_approval_required` automatically when gate threshold is crossed.
+    // If gate does not apply, `execution_triggered` is available directly.
+    second_approval_required: 'second_approval_pending',
+    execution_triggered:      'execution_started',
+  },
+  second_approval_pending: {
+    second_approval_confirmed: 'second_approval_confirmed',
+    second_approval_rejected:  'second_approval_rejected',
+  },
+  // Supervisor approved — execution can now be triggered.
+  second_approval_confirmed: { execution_triggered: 'execution_started' },
+  // Supervisor rejected — Lena re-evaluates from scenario selection.
+  second_approval_rejected:  { scenario_selected: 'recommendation_ranked' },
   execution_started:         { execution_step_updated: 'execution_monitoring' },
   execution_monitoring:      { audit_completed: 'audit_logged' },
   audit_logged:              { case_closed: 'closed' },

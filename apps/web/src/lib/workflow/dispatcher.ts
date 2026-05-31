@@ -31,6 +31,7 @@ import type {
 } from '@denkkern/types';
 import { getAdapter } from '../adapters/index.js';
 import { scenarioStore } from './scenario-store.js';
+import { requiresSecondApproval, validateApprovalEmitter } from './approval-gate.js';
 
 // ---------------------------------------------------------------------------
 // Scenario config — loaded once at module init from config/scenario-defaults.json
@@ -61,14 +62,28 @@ export async function dispatchWorkflowEvent(
   payload: WorkflowEventPayload
 ): Promise<WorkflowStateResponse> {
   // Step 1 — Source validation
-  // decision_confirmed must originate from a human user, never the system.
-  // See docs/architecture/02-workflow-state-machine.md §C1.
+  //
+  // C1: decision_confirmed must originate from a human user, never the system.
+  //     See docs/architecture/02-workflow-state-machine.md §C1.
   if (payload.event === 'decision_confirmed' && payload.emitted_by === 'system') {
     throw new DispatchError(
       'decision_confirmed must be emitted by a user, not the system.',
       'FORBIDDEN_SOURCE',
       400
     );
+  }
+
+  // C2: second_approval_confirmed and second_approval_rejected must be emitted
+  //     by a named supervisor — never 'lena' or 'system'.
+  //     See docs/architecture/sprint-2-plan.md §2 (architecture rule C2).
+  if (
+    payload.event === 'second_approval_confirmed' ||
+    payload.event === 'second_approval_rejected'
+  ) {
+    const c2Error = validateApprovalEmitter(payload.emitted_by);
+    if (c2Error !== null) {
+      throw new DispatchError(c2Error, 'FORBIDDEN_SOURCE', 400);
+    }
   }
 
   const adapter = getAdapter();
@@ -105,6 +120,12 @@ export async function dispatchWorkflowEvent(
   // Step 6 — Consequences
   if (payload.event === 'context_confirmed') {
     await runScenarioConsequence(caseId);
+  }
+
+  if (payload.event === 'decision_confirmed') {
+    await runApprovalGateConsequence(caseId, newState);
+    // Re-read state in case the gate consequence advanced it to second_approval_pending
+    return await adapter.getWorkflowState(caseId);
   }
 
   // Step 7 — Return
@@ -166,6 +187,56 @@ async function runScenarioConsequence(caseId: string): Promise<void> {
 
   const result = runScenarioEngine(input);
   scenarioStore.set(caseId, result);
+}
+
+/**
+ * Auto-invoked after `decision_confirmed` transitions to `decision_approved`.
+ *
+ * Evaluates the approval gate against the stored ScenarioResult.
+ * If the gate fires, dispatches `second_approval_required` (system-emitted)
+ * which transitions the case to `second_approval_pending`.
+ *
+ * Source: docs/architecture/sprint-2-plan.md §2
+ */
+async function runApprovalGateConsequence(
+  caseId: string,
+  _currentState: WorkflowStateResponse
+): Promise<void> {
+  const result = scenarioStore.get(caseId);
+  if (result === undefined) {
+    // No scenario result in store — gate cannot evaluate; let execution proceed directly.
+    return;
+  }
+
+  const gate = requiresSecondApproval(result, SCENARIO_CONFIG);
+
+  if (!gate.required) {
+    return;
+  }
+
+  // Gate fires — auto-advance to second_approval_pending via system event.
+  // `second_approval_required` IS a valid system-emitted event (unlike decision_confirmed).
+  const adapter = getAdapter();
+  const current = await adapter.getWorkflowState(caseId);
+  const transitions = WORKFLOW_TRANSITIONS[current.state as WorkflowState];
+  const nextState: WorkflowState | undefined = transitions['second_approval_required'];
+
+  if (nextState === undefined) {
+    // Current state does not allow this transition (e.g. already past it) — skip.
+    return;
+  }
+
+  const nextTransitions = WORKFLOW_TRANSITIONS[nextState];
+  const availableActions = Object.keys(nextTransitions) as WorkflowEvent[];
+
+  const gateState: WorkflowStateResponse = {
+    case_id: caseId,
+    state: nextState,
+    available_actions: availableActions,
+    updated_at: new Date().toISOString(),
+  };
+
+  await adapter.saveWorkflowState(caseId, gateState);
 }
 
 // ---------------------------------------------------------------------------

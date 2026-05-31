@@ -41,6 +41,12 @@ export interface ScenarioConfig {
     MEDIUM_max_days: number;
   };
   tiebreak_preference: string[];    // e.g. ["REPLACE", "REROUTE", "WAIT"]
+
+  // Second-approval gate — configurable, never hardcoded in application code.
+  // A scenario triggers supervisor review when its final_score_eur >= this value
+  // OR when execution_complexity === 'HIGH'.
+  // Default: 300_000 (€300k). Set to 0 to require second approval on all decisions.
+  second_approval_threshold_eur: number;
 }
 
 // ---------------------------------------------------------------------------

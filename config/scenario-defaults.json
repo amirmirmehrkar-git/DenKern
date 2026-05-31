@@ -20,5 +20,8 @@
     "LOW_max_days":    2,
     "MEDIUM_max_days": 5
   },
-  "tiebreak_preference": ["REPLACE", "REROUTE", "WAIT"]
+  "tiebreak_preference": ["REPLACE", "REROUTE", "WAIT"],
+
+  "_comment_approval": "Second-approval gate. Supervisor sign-off required when recommended scenario final_score_eur >= threshold OR execution_complexity === HIGH. Set to 0 to require second approval on every decision.",
+  "second_approval_threshold_eur": 300000
 }
