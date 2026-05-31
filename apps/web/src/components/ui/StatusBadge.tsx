@@ -16,30 +16,34 @@ type StatusInput =
 
 const BADGE_MAP: Record<StatusInput, { variant: BadgeVariant; label: string }> = {
   // Setup
-  setup_not_started:         { variant: 'neutral', label: 'Setup pending' },
-  setup_configured:          { variant: 'neutral', label: 'Setup complete' },
+  setup_not_started:         { variant: 'neutral',  label: 'Setup pending' },
+  setup_configured:          { variant: 'neutral',  label: 'Setup complete' },
   // Monitoring
-  monitoring_active:         { variant: 'info',    label: 'Monitoring' },
-  disruption_detected:       { variant: 'warning', label: 'Disruption detected' },
+  monitoring_active:         { variant: 'info',     label: 'Monitoring' },
+  disruption_detected:       { variant: 'warning',  label: 'Disruption detected' },
   // Alert
   alert_generated:           { variant: 'critical', label: 'Alert' },
   // Context review
-  disruption_context_opened: { variant: 'warning', label: 'Under review' },
+  disruption_context_opened: { variant: 'warning',  label: 'Under review' },
   // Scenarios
-  scenarios_generated:       { variant: 'brand',   label: 'Scenarios ready' },
-  recommendation_ranked:     { variant: 'brand',   label: 'Recommendation ready' },
-  decision_pending:          { variant: 'brand',   label: 'Decision pending' },
-  decision_approved:         { variant: 'success', label: 'Decision approved' },
+  scenarios_generated:       { variant: 'brand',    label: 'Scenarios ready' },
+  recommendation_ranked:     { variant: 'brand',    label: 'Recommendation ready' },
+  decision_pending:          { variant: 'brand',    label: 'Decision pending' },
+  decision_approved:         { variant: 'success',  label: 'Decision approved' },
+  // Second approval
+  second_approval_pending:   { variant: 'warning',  label: 'Awaiting supervisor' },
+  second_approval_confirmed: { variant: 'success',  label: 'Supervisor approved' },
+  second_approval_rejected:  { variant: 'critical', label: 'Supervisor rejected' },
   // Execution
-  execution_started:         { variant: 'info',    label: 'Executing' },
-  execution_monitoring:      { variant: 'info',    label: 'In progress' },
+  execution_started:         { variant: 'info',     label: 'Executing' },
+  execution_monitoring:      { variant: 'info',     label: 'In progress' },
   // Audit
-  audit_logged:              { variant: 'success', label: 'Audit logged' },
-  closed:                    { variant: 'neutral', label: 'Closed' },
+  audit_logged:              { variant: 'success',  label: 'Audit logged' },
+  closed:                    { variant: 'neutral',  label: 'Closed' },
   // Step statuses
-  pending:                   { variant: 'neutral', label: 'Pending' },
-  in_progress:               { variant: 'info',    label: 'In progress' },
-  completed:                 { variant: 'success', label: 'Completed' },
+  pending:                   { variant: 'neutral',  label: 'Pending' },
+  in_progress:               { variant: 'info',     label: 'In progress' },
+  completed:                 { variant: 'success',  label: 'Completed' },
   failed:                    { variant: 'critical', label: 'Failed' },
 };
 

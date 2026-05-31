@@ -22,10 +22,15 @@ export const STATE_ORDER: Record<WorkflowState, number> = {
   recommendation_ranked:     7,
   decision_pending:          8,
   decision_approved:         9,
-  execution_started:         10,
-  execution_monitoring:      11,
-  audit_logged:              12,
-  closed:                    13,
+  // Second-approval states occupy ordinals 10–12.
+  // second_approval_rejected sits at 10 because it steps backwards toward re-selection.
+  second_approval_pending:   10,
+  second_approval_confirmed: 11,
+  second_approval_rejected:  10, // Same ordinal as pending — treated as a lateral state
+  execution_started:         12,
+  execution_monitoring:      13,
+  audit_logged:              14,
+  closed:                    15,
 };
 
 /**
@@ -57,6 +62,15 @@ export function resolveRouteForState(
     case 'decision_approved':
       return `/decision-room/${caseId}`;
 
+    // Second-approval states: rejected returns Lena to the decision room;
+    // pending/confirmed show the execution stub with the approval panel.
+    case 'second_approval_rejected':
+      return `/decision-room/${caseId}`;
+
+    case 'second_approval_pending':
+    case 'second_approval_confirmed':
+      return `/execution/${caseId}`;
+
     case 'execution_started':
     case 'execution_monitoring':
       return `/execution/${caseId}`;
@@ -79,6 +93,9 @@ export const STATE_LABELS: Record<WorkflowState, string> = {
   recommendation_ranked:     'Recommendation ready',
   decision_pending:          'Awaiting decision',
   decision_approved:         'Decision approved',
+  second_approval_pending:   'Awaiting supervisor approval',
+  second_approval_confirmed: 'Supervisor approved',
+  second_approval_rejected:  'Supervisor rejected — re-evaluate',
   execution_started:         'Execution started',
   execution_monitoring:      'Execution in progress',
   audit_logged:              'Audit recorded',
