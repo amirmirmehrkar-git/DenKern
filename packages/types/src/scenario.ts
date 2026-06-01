@@ -155,6 +155,11 @@ export interface AssumptionsLog {
   strategic_weights_applied: Record<string, number>; // { WAIT: 0, REROUTE: 0, REPLACE: 0 }
   daily_production_loss_eur: number;
   scenario_config_version: string;
+
+  // Financial impact inputs — carried through so the UI can call
+  // calculateFinancialImpact() without an additional API fetch.
+  required_by: string;         // ISO date — ShipmentContext.production_context.required_by
+  baseline_eta_date: string;   // ISO date — PredictionOutput.eta.baseline
 }
 
 // ---------------------------------------------------------------------------

@@ -166,6 +166,8 @@ export function runScenarioEngine(input: ScenarioEngineInput): ScenarioResult {
     strategic_weights_applied,
     daily_production_loss_eur: daily_downtime_cost_eur,
     scenario_config_version: scenario_config.version,
+    required_by:       erp_context.required_by,
+    baseline_eta_date: prediction_snapshot.eta.baseline,
   };
 
   // ---------------------------------------------------------------------------
@@ -261,4 +263,6 @@ function buildConfidenceNote(score: number, tier: string): string {
     return `Prediction confidence is ${pct}% (Medium tier). Uncertainty risk has been applied to the WAIT scenario score.`;
   }
   return `Prediction confidence is ${pct}% (Low tier). Elevated uncertainty risk has been applied to the WAIT scenario score.`;
+}
+idence is ${pct}% (Low tier). Elevated uncertainty risk has been applied to the WAIT scenario score.`;
 }
