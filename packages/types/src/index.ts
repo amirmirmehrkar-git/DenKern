@@ -25,7 +25,11 @@ export type {
   ConfidenceTier,
 } from './prediction.js';
 
-export { classifyConfidence } from './prediction.js';
+export {
+  classifyConfidence,
+  isPredictionOutputFull,
+  normalizeMinimalPrediction,
+} from './prediction.js';
 
 // Shipment context (ERP adapter)
 export type { ShipmentContext } from './shipment.js';
@@ -72,3 +76,12 @@ export type {
 
 // Audit
 export type { AuditEntry, AuditOutcome, OutcomeStatus } from './audit.js';
+
+// Financial impact layer
+export type {
+  FinancialImpactInput,
+  FinancialImpactResult,
+  BufferExhaustionRisk,
+} from './financial.js';
+
+export { calculateFinancialImpact } from './financial.js';

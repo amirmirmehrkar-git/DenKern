@@ -19,6 +19,7 @@ import { join } from 'path';
 import type { DataAdapter } from './data-adapter.js';
 import type {
   PredictionOutput,
+  PredictionOutputMinimal,
   ShipmentContext,
   AlertEvent,
   DisruptionContext,
@@ -26,7 +27,7 @@ import type {
   WorkflowEvent,
   WorkflowState,
 } from '@denkkern/types';
-import { WORKFLOW_TRANSITIONS } from '@denkkern/types';
+import { WORKFLOW_TRANSITIONS, normalizeMinimalPrediction } from '@denkkern/types';
 
 // ---------------------------------------------------------------------------
 // Case ID → shipment ID resolution
@@ -102,9 +103,12 @@ export class MockDataAdapter implements DataAdapter {
 
   async getPrediction(shipmentId: string): Promise<PredictionOutput> {
     const caseId = this.#caseIdForShipment(shipmentId);
-    const data = this.#readSeedJson<PredictionOutput & { _comment?: string }>(caseId, 'prediction.json');
-    const { _comment: _, ...prediction } = data;
-    return prediction;
+    // Seed may be full PredictionOutput or PredictionOutputMinimal.
+    // normalizeMinimalPrediction() is idempotent for full output.
+    // This mirrors the pattern the real adapter must follow at the James API boundary.
+    const data = this.#readSeedJson<(PredictionOutput | PredictionOutputMinimal) & { _comment?: string }>(caseId, 'prediction.json');
+    const { _comment: _, ...raw } = data;
+    return normalizeMinimalPrediction(raw as PredictionOutput | PredictionOutputMinimal);
   }
 
   async getShipmentContext(shipmentId: string): Promise<ShipmentContext> {
