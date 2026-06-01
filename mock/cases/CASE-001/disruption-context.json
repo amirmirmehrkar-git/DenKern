@@ -69,5 +69,48 @@
       "estimated_delay_impact_days": 2,
       "source": "simulated"
     }
+  ],
+  "external_risk_signals": [
+    {
+      "signal_id": "ERS-001",
+      "signal_type": "PORT_STRIKE",
+      "severity": "HIGH",
+      "confidence": 0.82,
+      "source_type": "simulated",
+      "source_name": "fixture/news-monitor",
+      "location": "Port of Hamburg",
+      "time_window": { "valid_from": "2026-05-27", "valid_until": "2026-05-29" },
+      "description": "Hamburg port workers union confirmed a 48-hour warning strike starting 2026-05-27, affecting container and bulk cargo terminals.",
+      "decision_relevance": "The original shipment is due to berth at Hamburg during the strike window. Waiting exposes production to the full delay plus potential docking refusal.",
+      "recommended_engine_effect": "increase_wait_risk",
+      "estimated_additional_delay_days": 2
+    },
+    {
+      "signal_id": "ERS-002",
+      "signal_type": "MARITIME_SECURITY_WARNING",
+      "severity": "HIGH",
+      "confidence": 0.71,
+      "source_type": "simulated",
+      "source_name": "fixture/maritime-monitor",
+      "route": "Bay of Biscay — North Atlantic approach",
+      "time_window": { "valid_from": "2026-05-25", "valid_until": "2026-05-30" },
+      "description": "Severe weather warning (Beaufort 9–10, 5–6m swell) active across Bay of Biscay. Several vessels diverted to Bilbao anchorage.",
+      "decision_relevance": "MSC Barcelona is currently transiting this route. Severe conditions may cause a further 1–2 day deviation beyond the model prediction.",
+      "recommended_engine_effect": "flag_second_approval",
+      "estimated_additional_delay_days": 1
+    },
+    {
+      "signal_id": "ERS-003",
+      "signal_type": "GEOPOLITICAL_RISK",
+      "severity": "MEDIUM",
+      "confidence": 0.55,
+      "source_type": "simulated",
+      "source_name": "fixture/intelligence-monitor",
+      "route": "North Sea / English Channel",
+      "time_window": { "valid_from": "2026-05-20" },
+      "description": "Ongoing EU–UK customs friction causing intermittent inspection delays at Dover Strait. Average additional dwell: 4–6 hours.",
+      "decision_relevance": "Low direct impact for Hamburg-bound cargo. Informational only.",
+      "recommended_engine_effect": "increase_urgency"
+    }
   ]
 }

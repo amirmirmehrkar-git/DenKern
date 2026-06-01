@@ -10,6 +10,7 @@
 
 import type { PredictionOutput } from './prediction.js';
 import type { ShipmentContext } from './shipment.js';
+import type { ExternalRiskSignal } from './external-risk.js';
 
 export type SignalSeverity = 'low' | 'medium' | 'high';
 export type SignalSource = 'real' | 'simulated';
@@ -42,4 +43,9 @@ export interface DisruptionContext {
   // Environmental signals — optional (absent if adapters unavailable)
   weather_signal?: WeatherSignal;
   news_signals?: NewsSignal[];
+
+  // External risk intelligence signals — optional (mock/fixture for MVP)
+  // LLM extracted / operator entered / fixture. Never directly modifies scores;
+  // passed into ScenarioEngineInput.external_risk_signals by the orchestrator.
+  external_risk_signals?: ExternalRiskSignal[];
 }

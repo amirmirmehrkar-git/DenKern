@@ -77,6 +77,16 @@ export type {
 // Audit
 export type { AuditEntry, AuditOutcome, OutcomeStatus } from './audit.js';
 
+// External risk signals (LLM extraction / mock layer)
+export type {
+  ExternalRiskSignalType,
+  ExternalRiskSeverity,
+  ExternalRiskSourceType,
+  ExternalRiskEngineEffect,
+  ExternalRiskTimeWindow,
+  ExternalRiskSignal,
+} from './external-risk.js';
+
 // Financial impact layer
 export type {
   FinancialImpactInput,

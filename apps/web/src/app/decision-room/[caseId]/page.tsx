@@ -35,6 +35,7 @@ import { useWorkflowState } from '../../../hooks/useWorkflowState.js';
 import { ScenarioComparisonMatrix } from '../../../components/decision/ScenarioComparisonMatrix.js';
 import { DecisionActionPanel } from '../../../components/decision/DecisionActionPanel.js';
 import { FinancialImpactPanel } from '../../../components/decision/FinancialImpactPanel.js';
+import { ExternalRiskSignalPanel } from '../../../components/decision/ExternalRiskSignalPanel.js';
 import { PredictionSignalPanel } from '../../../components/panels/PredictionSignalPanel.js';
 import { BusinessContextPanel } from '../../../components/panels/BusinessContextPanel.js';
 import { WorkflowTimeline } from '../../../components/ui/WorkflowTimeline.js';
@@ -334,6 +335,14 @@ export default function DecisionRoomPage() {
         </div>
         <StatusBadge status={state ?? 'scenarios_generated'} />
       </div>
+
+      {/* External risk signals — always shown when present (pre- and post-scenarios) */}
+      {(disruptionContext.external_risk_signals?.length ?? 0) > 0 && (
+        <ExternalRiskSignalPanel
+          signals={disruptionContext.external_risk_signals!}
+          urgentOnly={false}
+        />
+      )}
 
       {/* Pre-scenarios gate — shown when scenarios not yet computed */}
       {scenarioResult == null && (

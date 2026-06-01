@@ -14,6 +14,7 @@
 import type { PredictionOutput, ConfidenceTier } from './prediction.js';
 import type { ShipmentContext } from './shipment.js';
 import type { SignalSeverity, SignalSource } from './disruption.js';
+import type { ExternalRiskSignal } from './external-risk.js';
 
 // ---------------------------------------------------------------------------
 // Configuration (loaded from config/scenario-defaults.json — versioned)
@@ -72,6 +73,11 @@ export interface ScenarioEngineInput {
   freight_options: ShipmentContext['freight_options']; // May be empty array
   active_risk_signals: ActiveRiskSignal[];        // Merged from weather + news signals
   scenario_config: ScenarioConfig;               // Versioned — passed in, never ambient
+
+  // External risk intelligence signals — optional (mock/fixture for MVP)
+  // HIGH or CRITICAL signals boost WAIT scenario risk and may trigger second approval.
+  // LLM boundary: LLM classifies signals; engine decides scoring effects deterministically.
+  external_risk_signals?: ExternalRiskSignal[];
 }
 
 // ---------------------------------------------------------------------------
@@ -193,4 +199,12 @@ export interface ScenarioResult {
   assumptions_log: AssumptionsLog;
 
   scenario_count: number;           // Must equal scenarios.length
+
+  // Second-approval gate — true when financial threshold exceeded, execution
+  // complexity is HIGH, or any external signal with severity HIGH/CRITICAL is present.
+  second_approval_required: boolean;
+  second_approval_reason?: string;  // Plain-language explanation for supervisor
+
+  // High/critical external signals that influenced this result — empty array if none
+  urgency_signals: ExternalRiskSignal[];
 }
