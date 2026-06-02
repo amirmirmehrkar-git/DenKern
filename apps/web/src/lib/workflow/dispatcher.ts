@@ -19,16 +19,15 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { WORKFLOW_TRANSITIONS } from '@denkkern/types';
-import { runScenarioEngine } from '@denkkern/engine';
+import { runScenarioEngine, annotateFinancialImpact } from '@denkkern/engine';
 import type {
   WorkflowEvent,
   WorkflowState,
   WorkflowStateResponse,
   WorkflowEventPayload,
   ScenarioConfig,
-  ScenarioEngineInput,
-  ActiveRiskSignal,
 } from '@denkkern/types';
+import { assembleScenarioEngineInput } from './assemble-engine-input.js';
 import { getAdapter } from '../adapters/index.js';
 import { scenarioStore } from './scenario-store.js';
 import { requiresSecondApproval, validateApprovalEmitter } from './approval-gate.js';
@@ -147,45 +146,19 @@ export async function dispatchWorkflowEvent(
 async function runScenarioConsequence(caseId: string): Promise<void> {
   const adapter = getAdapter();
   const ctx = await adapter.getDisruptionContext(caseId);
-  const sc = ctx.shipment_context;
 
-  // Map DisruptionContext signals → ActiveRiskSignal[]
-  const signals: ActiveRiskSignal[] = [];
+  const { engineInput, businessFactors } = assembleScenarioEngineInput(
+    caseId,
+    ctx,
+    SCENARIO_CONFIG
+  );
 
-  if (ctx.weather_signal !== undefined) {
-    signals.push({
-      type: 'weather_disruption',
-      location: ctx.weather_signal.route_id,
-      severity: ctx.weather_signal.severity,
-      estimated_impact_days: ctx.weather_signal.estimated_delay_impact_days,
-      source: ctx.weather_signal.source,
-    });
-  }
+  const rawResult = runScenarioEngine(engineInput);
 
-  for (const news of ctx.news_signals ?? []) {
-    signals.push({
-      type: news.event_type,
-      location: news.region_id,
-      severity: news.severity,
-      estimated_impact_days: news.estimated_delay_impact_days,
-      source: news.source,
-    });
-  }
+  // Annotate with financial impact if business factors are present.
+  // annotateFinancialImpact is pure and idempotent — safe to call unconditionally.
+  const result = annotateFinancialImpact(rawResult, businessFactors);
 
-  const input: ScenarioEngineInput = {
-    case_id: caseId,
-    prediction_snapshot: ctx.prediction,
-    erp_context: {
-      daily_downtime_cost_eur: sc.production_context.daily_downtime_cost_eur,
-      required_by:             sc.production_context.required_by,
-      inventory:               sc.inventory,
-    },
-    freight_options:     sc.freight_options,
-    active_risk_signals: signals,
-    scenario_config:     SCENARIO_CONFIG,
-  };
-
-  const result = runScenarioEngine(input);
   scenarioStore.set(caseId, result);
 }
 

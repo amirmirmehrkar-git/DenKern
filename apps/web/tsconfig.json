@@ -17,6 +17,9 @@
       "@denkkern/engine": [
         "../../packages/engine/src/index.ts"
       ],
+      "@denkkern/intelligence": [
+        "../../packages/intelligence/src/index.ts"
+      ],
       "@denkkern/mock": [
         "../../mock/index.ts"
       ]
