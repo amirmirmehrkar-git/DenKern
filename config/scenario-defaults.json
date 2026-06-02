@@ -1,27 +1,41 @@
 {
-  "_comment": "Versioned scenario engine configuration. Changes require Amir + Alex alignment. See docs/architecture/03-scenario-engine.md §8.2",
+  "_comment": "Versioned scenario engine configuration. Changes require Amir + Alex alignment. See docs/architecture/03-scenario-engine.md \u00a78.2",
   "version": "scenario-config-v0.1",
   "confidence_tiers": {
-    "HIGH":   { "min_score": 0.75, "wait_modifier_increment": 0.0 },
-    "MEDIUM": { "min_score": 0.50, "wait_modifier_increment": 0.1 },
-    "LOW":    { "min_score": 0.0,  "wait_modifier_increment": 0.2 }
+    "HIGH": {
+      "min_score": 0.75,
+      "wait_modifier_increment": 0.0
+    },
+    "MEDIUM": {
+      "min_score": 0.5,
+      "wait_modifier_increment": 0.1
+    },
+    "LOW": {
+      "min_score": 0.0,
+      "wait_modifier_increment": 0.2
+    }
   },
   "base_risk_modifiers": {
-    "WAIT":    1.2,
+    "WAIT": 1.2,
     "REROUTE": 1.1,
     "REPLACE": 1.0
   },
   "strategic_weights_eur": {
-    "WAIT":    0,
+    "WAIT": 0,
     "REROUTE": 0,
     "REPLACE": 0
   },
   "risk_level_thresholds": {
-    "LOW_max_days":    2,
+    "LOW_max_days": 2,
     "MEDIUM_max_days": 5
   },
-  "tiebreak_preference": ["REPLACE", "REROUTE", "WAIT"],
-
+  "tiebreak_preference": [
+    "REPLACE",
+    "REROUTE",
+    "WAIT"
+  ],
   "_comment_approval": "Second-approval gate. Supervisor sign-off required when recommended scenario final_score_eur >= threshold OR execution_complexity === HIGH. Set to 0 to require second approval on every decision.",
-  "second_approval_threshold_eur": 300000
+  "second_approval_threshold_eur": 300000,
+  "harbor_congestion_weight": 0.15,
+  "_comment_harbor": "Harbor congestion modifier weight. Multiplied by harbor_congestion_signal (0.0-1.0) from James' model to produce additive WAIT risk modifier boost."
 }

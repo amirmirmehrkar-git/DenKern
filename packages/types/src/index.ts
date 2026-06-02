@@ -59,6 +59,8 @@ export type {
   ScenarioResult,
   RiskLevel,
   ExecutionComplexity,
+  BusinessFactors,
+  FinancialImpactAnnotation,
 } from './scenario.js';
 
 export { DECISION_NOTE } from './scenario.js';

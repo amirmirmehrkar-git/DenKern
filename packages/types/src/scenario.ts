@@ -48,6 +48,51 @@ export interface ScenarioConfig {
   // OR when execution_complexity === 'HIGH'.
   // Default: 300_000 (€300k). Set to 0 to require second approval on all decisions.
   second_approval_threshold_eur: number;
+
+  // Harbor congestion weight — multiplied by harbor_congestion_signal (0.0–1.0)
+  // to produce the additive WAIT risk modifier boost.
+  // Default: 0.15 if absent (backward-compatible with existing config files).
+  harbor_congestion_weight?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Business factors — explicit first-class engine contract (Sprint 2.5)
+//
+// Promoted from implicit ERP context assumptions to a named interface.
+// Derived from ShipmentContext.production_context at input assembly time.
+// Used by annotateFinancialImpact() to produce FinancialImpactAnnotation.
+// ---------------------------------------------------------------------------
+
+export interface BusinessFactors {
+  cost_of_delay_eur_per_day: number;            // Production loss per day
+  inventory_buffer_days: number;                // Days production absorbs without the part
+  part_criticality: 'LOW' | 'MEDIUM' | 'HIGH'; // HIGH = blocks production from day 0
+  affected_production_lines: number;            // Lines dependent on this part (1 for MVP)
+  contract_penalty_eur_per_day: number;         // SLA penalty per overdue day (0 = no penalty)
+  contract_penalty_trigger_day: number;         // Day delay must exceed before penalty applies
+}
+
+// ---------------------------------------------------------------------------
+// Financial impact annotation — engine-owned, deterministic (Sprint 2.5)
+//
+// Produced by annotateFinancialImpact() in packages/engine.
+// Stored on ScenarioResult.financial_impact — absent if business_factors were
+// not provided at engine-run time (backward-compatible with existing tests).
+// ---------------------------------------------------------------------------
+
+export interface FinancialImpactAnnotation {
+  production_downtime_risk: {
+    total_exposure_eur: number;        // wait_delay_days × cost_per_day × affected_lines
+    buffer_remaining_days: number;     // inventory_buffer_days − wait_delay_days (may be negative)
+    buffer_exhausted: boolean;         // buffer_remaining_days <= 0
+    affected_production_lines: number;
+  };
+  contract_exposure: {
+    penalty_applies: boolean;
+    estimated_penalty_eur: number;     // 0 if no penalty or delay within trigger window
+    penalty_trigger_day: number;       // Informational — surfaced in UI
+  };
+  strategic_summary: string;           // Deterministic template prose — never LLM-generated
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +123,10 @@ export interface ScenarioEngineInput {
   // HIGH or CRITICAL signals boost WAIT scenario risk and may trigger second approval.
   // LLM boundary: LLM classifies signals; engine decides scoring effects deterministically.
   external_risk_signals?: ExternalRiskSignal[];
+
+  // Business factors — Sprint 2.5 addition, optional (backward-compatible).
+  // When present, passed to annotateFinancialImpact() after runScenarioEngine().
+  business_factors?: BusinessFactors;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,4 +256,9 @@ export interface ScenarioResult {
 
   // High/critical external signals that influenced this result — empty array if none
   urgency_signals: ExternalRiskSignal[];
+
+  // Financial impact annotation — Sprint 2.5 addition, optional (backward-compatible).
+  // Produced by annotateFinancialImpact() after runScenarioEngine().
+  // Absent if business_factors were not provided at engine-run time.
+  financial_impact?: FinancialImpactAnnotation;
 }

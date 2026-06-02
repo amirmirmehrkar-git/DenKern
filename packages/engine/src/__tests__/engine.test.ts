@@ -38,6 +38,7 @@ const BASE_CONFIG: ScenarioConfig = {
     MEDIUM_max_days: 5,
   },
   tiebreak_preference: ['REPLACE', 'REROUTE', 'WAIT'],
+  second_approval_threshold_eur: 500_000,
 };
 
 /** Lena 2.0 Hamburg case — the canonical MVP input */

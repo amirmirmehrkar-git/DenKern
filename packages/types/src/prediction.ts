@@ -32,6 +32,10 @@ export interface PredictionOutput {
     expected_delay_days: number;    // Days beyond baseline
     p_delay_over_3_days: number;    // Probability 0.0–1.0
     confidence_score: number;       // Model confidence 0.0–1.0
+
+    // Sprint 2.5 additions — optional until James delivers
+    variance_days?: number;               // Std dev of delay estimate (Monte Carlo input — future)
+    harbor_congestion_signal?: number;    // 0.0–1.0 from GNN harbor layer; amplifies WAIT risk modifier
   };
 
   // Risk drivers

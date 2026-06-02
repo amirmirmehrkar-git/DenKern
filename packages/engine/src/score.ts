@@ -31,6 +31,11 @@ export interface ScoreInput {
   execution_complexity: ExecutionComplexity;
   config: ScenarioConfig;
   data_sources: string[];
+  // Harbor congestion modifier — Sprint 2.5.
+  // Additive boost to WAIT effective_risk_modifier only.
+  // Value = harbor_congestion_signal × config.harbor_congestion_weight.
+  // Always 0 for REROUTE and REPLACE (signal is specific to the waiting scenario).
+  harbor_modifier?: number;
 }
 
 /**
@@ -55,6 +60,7 @@ export function scoreScenario(input: ScoreInput): Scenario {
     execution_complexity,
     config,
     data_sources,
+    harbor_modifier,
   } = input;
 
   const isWait = scenario_type === 'wait';
@@ -67,7 +73,9 @@ export function scoreScenario(input: ScoreInput): Scenario {
   const baseModifierKey = scenario_id as keyof typeof config.base_risk_modifiers;
   const base_risk_modifier = config.base_risk_modifiers[baseModifierKey] ?? 1.0;
   const confidence_increment = getConfidenceIncrement(confidence_tier, isWait, config);
-  const effective_risk_modifier = base_risk_modifier + confidence_increment;
+  // Harbor modifier: additive boost for WAIT only — 0 for REROUTE and REPLACE.
+  const harbor_boost = isWait ? (harbor_modifier ?? 0) : 0;
+  const effective_risk_modifier = base_risk_modifier + confidence_increment + harbor_boost;
   const adjusted_cost_eur = base_cost_eur * effective_risk_modifier;
 
   // Step 4: strategic weight
@@ -93,7 +101,8 @@ export function scoreScenario(input: ScoreInput): Scenario {
     base_risk_modifier,
     confidence_increment,
     confidence_tier,
-    isWait
+    isWait,
+    harbor_boost
   );
 
   const strategic_weight_label =
@@ -164,13 +173,19 @@ function buildRiskModifierLabel(
   base: number,
   increment: number,
   tier: ConfidenceTier,
-  isWait: boolean
+  isWait: boolean,
+  harborBoost?: number
 ): string {
-  if (!isWait || increment === 0) {
+  if (!isWait) {
     return `Risk modifier ×${base.toFixed(1)} (no confidence adjustment)`;
   }
-  const effective = base + increment;
-  return `Risk modifier ×${effective.toFixed(1)} (base ×${base.toFixed(1)} + ${increment.toFixed(1)} ${tier.toLowerCase()} confidence uncertainty)`;
+  const boost = harborBoost ?? 0;
+  const effective = base + increment + boost;
+  const parts: string[] = [`base ×${base.toFixed(1)}`];
+  if (increment > 0) parts.push(`+${increment.toFixed(2)} ${tier.toLowerCase()} confidence uncertainty`);
+  if (boost > 0) parts.push(`+${boost.toFixed(2)} harbor congestion`);
+  if (parts.length === 1) return `Risk modifier ×${effective.toFixed(2)} (no adjustment)`;
+  return `Risk modifier ×${effective.toFixed(2)} (${parts.join(', ')})`;
 }
 
 function buildRiskModifierReason(

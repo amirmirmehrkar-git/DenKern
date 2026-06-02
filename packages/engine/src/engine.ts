@@ -45,6 +45,12 @@ export function runScenarioEngine(input: ScenarioEngineInput): ScenarioResult {
 
   const confidence_tier = classifyConfidenceTier(delay.confidence_score, scenario_config);
 
+  // Harbor congestion modifier — additive boost to WAIT effective_risk_modifier only.
+  // Computed from James' GNN harbor layer signal (0.0–1.0) × config weight (default 0.15).
+  const harborModifier =
+    (delay.harbor_congestion_signal ?? 0) *
+    (scenario_config.harbor_congestion_weight ?? 0.15);
+
   // Common data sources label (appended per scenario)
   const baseSources = [
     `James prediction model ${prediction_snapshot.model_version}`,
@@ -75,6 +81,7 @@ export function runScenarioEngine(input: ScenarioEngineInput): ScenarioResult {
       execution_complexity: 'LOW',
       config: scenario_config,
       data_sources: [...baseSources, ...signalSources],
+      ...(harborModifier > 0 ? { harbor_modifier: harborModifier } : {}),
     })
   );
 
