@@ -9,6 +9,7 @@
  */
 
 export { runScenarioEngine, ENGINE_VERSION } from './engine.js';
+export { annotateFinancialImpact } from './financial-impact.js';
 
 // Expose helpers used by tests and the API layer
 export { classifyConfidenceTier, classifyRiskLevel, daysBetween, formatEur } from './classify.js';

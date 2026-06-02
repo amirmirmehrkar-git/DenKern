@@ -1,18 +1,19 @@
 {
-  "_comment": "James ML output — SHIP-001, Hamburg case (Lena 2.0 seed). Immutable from receipt. See docs/architecture/06-data-contracts.md §1",
+  "_comment": "James ML output \u2014 SHIP-001, Hamburg case (Lena 2.0 seed). Immutable from receipt. See docs/architecture/06-data-contracts.md \u00a71",
   "shipment_id": "SHIP-001",
   "model_version": "eta-delay-v0.1",
   "generated_at": "2026-05-25T08:30:00Z",
   "eta": {
-    "baseline":   "2026-05-28",
-    "expected":   "2026-06-02",
+    "baseline": "2026-05-28",
+    "expected": "2026-06-02",
     "optimistic": "2026-05-30",
-    "pessimistic":"2026-06-06"
+    "pessimistic": "2026-06-06"
   },
   "delay": {
     "expected_delay_days": 5,
     "p_delay_over_3_days": 0.72,
-    "confidence_score":    0.68
+    "confidence_score": 0.68,
+    "harbor_congestion_signal": 0.7
   },
   "risk_drivers": [
     {

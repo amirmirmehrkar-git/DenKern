@@ -23,6 +23,13 @@ export interface ShipmentContext {
     daily_downtime_cost_eur: number; // Core financial input for scenario scoring
     critical_part: string;           // e.g. "Marine-quality bolts"
     required_by: string;             // ISO date — when part must arrive
+
+    // Sprint 2.5 additions — optional; used by annotateFinancialImpact()
+    inventory_buffer_days?: number;              // Days production can absorb without the part
+    part_criticality?: 'LOW' | 'MEDIUM' | 'HIGH'; // HIGH = blocks production immediately
+    contract_penalty_eur_per_day?: number;       // Customer SLA penalty per overdue day
+    contract_penalty_trigger_day?: number;       // Day delay must exceed before penalty applies (0 = immediate)
+    affected_production_lines?: number;          // How many lines depend on this part (default 1)
   };
 
   // Inventory / replacement
