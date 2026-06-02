@@ -1,0 +1,51 @@
+[
+  {
+    "event_id": "GE-BAY-001",
+    "region": "Bay of Biscay",
+    "route": "North Atlantic — Bay of Biscay approach",
+    "event_type": "maritime_security",
+    "description": "UK Maritime Trade Operations (UKMTO) issued advisory for severe weather conditions in Bay of Biscay. Beaufort 9–10 forecast, wave height 5–6m. Several vessels diverted to Bilbao anchorage.",
+    "reported_at": "2026-05-25T06:00:00Z",
+    "valid_from": "2026-05-25",
+    "valid_until": "2026-05-30",
+    "confidence": 0.85,
+    "source": "UKMTO advisory (simulated)",
+    "severity_hint": "high"
+  },
+  {
+    "event_id": "GE-NSCH-001",
+    "region": "North Sea",
+    "route": "North Sea / English Channel",
+    "event_type": "government_restriction",
+    "description": "EU–UK post-Brexit customs friction causing intermittent inspection delays at Dover Strait entry points. Average additional dwell time 4–6 hours for EU-flagged cargo.",
+    "reported_at": "2026-05-10T00:00:00Z",
+    "valid_from": "2026-05-10",
+    "confidence": 0.60,
+    "source": "UK Border Force advisory (simulated)",
+    "severity_hint": "medium"
+  },
+  {
+    "event_id": "GE-SUEZ-001",
+    "region": "Red Sea",
+    "route": "Suez Canal / Red Sea southbound",
+    "event_type": "war_risk",
+    "description": "Ongoing Houthi attacks on commercial shipping in Red Sea and Gulf of Aden. Joint Maritime Information Centre (JMIC) maintaining MARSEC advisory.",
+    "reported_at": "2026-05-01T00:00:00Z",
+    "valid_from": "2026-05-01",
+    "confidence": 0.95,
+    "source": "JMIC advisory (simulated)",
+    "severity_hint": "critical"
+  },
+  {
+    "event_id": "GE-RU-001",
+    "region": "Russia / Eastern Europe",
+    "route": null,
+    "event_type": "sanctions",
+    "description": "EU Council extended existing sanctions package on Russian-flag vessels. Continued prohibition on Russian-origin goods transiting EU ports.",
+    "reported_at": "2026-04-15T00:00:00Z",
+    "valid_from": "2026-04-15",
+    "confidence": 0.98,
+    "source": "EU Official Journal (simulated)",
+    "severity_hint": "medium"
+  }
+]

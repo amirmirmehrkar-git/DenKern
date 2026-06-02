@@ -1,0 +1,41 @@
+[
+  {
+    "event_id": "SE-PL-001",
+    "supplier_name": "Wrocław Industrial Fasteners",
+    "location": "Poland",
+    "event_type": "disruption",
+    "description": "Wrocław Industrial Fasteners (alternative supplier for marine-grade bolts) reporting reduced output due to raw material shortage. Estimated 30% capacity reduction for next 14 days.",
+    "reported_at": "2026-05-22T10:00:00Z",
+    "valid_from": "2026-05-22",
+    "valid_until": "2026-06-05",
+    "confidence": 0.70,
+    "source": "Supplier ERP alert (simulated)",
+    "affected_routes": ["Hamburg", "Rotterdam", "Amsterdam"]
+  },
+  {
+    "event_id": "SE-DE-001",
+    "supplier_name": "Norddeutsche Metallwerke GmbH",
+    "location": "Bremen, Germany",
+    "event_type": "disruption",
+    "description": "Norddeutsche Metallwerke GmbH halted production for scheduled maintenance 2026-05-26 to 2026-05-27. No impact on existing orders already in transit.",
+    "reported_at": "2026-05-15T08:00:00Z",
+    "valid_from": "2026-05-26",
+    "valid_until": "2026-05-27",
+    "confidence": 0.95,
+    "source": "Supplier maintenance notice (simulated)",
+    "affected_routes": []
+  },
+  {
+    "event_id": "SE-CN-001",
+    "supplier_name": "Guangzhou Marine Components Co.",
+    "location": "Guangzhou, China",
+    "event_type": "disruption",
+    "description": "Guangzhou Marine Components Co. reporting 5–7 day dispatch delays due to port congestion at Nansha terminal affecting outbound containerised cargo.",
+    "reported_at": "2026-05-20T06:00:00Z",
+    "valid_from": "2026-05-20",
+    "valid_until": "2026-06-01",
+    "confidence": 0.65,
+    "source": "Freight forwarder alert (simulated)",
+    "affected_routes": ["Hamburg", "Rotterdam"]
+  }
+]
