@@ -89,6 +89,11 @@ export interface RawGeopoliticalEvent {
   severity_hint?: string;    // 'low' | 'medium' | 'high' | 'critical' — agent normalises
 }
 
+/**
+ * RawWeatherEvent is defined in agents/weather-context.ts alongside its
+ * classification logic. Re-exported from index.ts for downstream consumers.
+ */
+
 /** Raw supplier event — from ERP alerts, supplier bulletins, logistics reports */
 export interface RawSupplierEvent {
   event_id: string;

@@ -23,6 +23,7 @@ import type { AgentContext, ExternalRiskAgent } from './types.js';
 import { PortIntelligenceAgent } from './agents/port-intelligence.js';
 import { GeopoliticalRiskAgent } from './agents/geopolitical-risk.js';
 import { SupplierRiskAgent } from './agents/supplier-risk.js';
+import { WeatherContextAgent } from './agents/weather-context.js';
 
 // ---------------------------------------------------------------------------
 // Default agent set
@@ -33,6 +34,7 @@ function defaultAgents(): ExternalRiskAgent[] {
     new PortIntelligenceAgent(),
     new GeopoliticalRiskAgent(),
     new SupplierRiskAgent(),
+    new WeatherContextAgent(),
   ];
 }
 

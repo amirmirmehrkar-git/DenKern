@@ -24,6 +24,8 @@ export type { ExternalRiskAgent, AgentContext, RawPortEvent, RawGeopoliticalEven
 export { PortIntelligenceAgent } from './agents/port-intelligence.js';
 export { GeopoliticalRiskAgent } from './agents/geopolitical-risk.js';
 export { SupplierRiskAgent } from './agents/supplier-risk.js';
+export { WeatherContextAgent } from './agents/weather-context.js';
+export type { RawWeatherEvent } from './agents/weather-context.js';
 
 // Validation utilities (exposed for downstream testing)
 export { validateSignal, validateSignals } from './validate.js';
