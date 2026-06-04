@@ -30,7 +30,7 @@ import type {
 import { assembleScenarioEngineInput } from './assemble-engine-input.js';
 import { getAdapter } from '../adapters/index.js';
 import { scenarioStore } from './scenario-store.js';
-import { requiresSecondApproval, validateApprovalEmitter } from './approval-gate.js';
+import { validateApprovalEmitter } from './approval-gate.js';
 
 // ---------------------------------------------------------------------------
 // Scenario config — loaded once at module init from config/scenario-defaults.json
@@ -170,6 +170,15 @@ async function runScenarioConsequence(caseId: string): Promise<void> {
  * which transitions the case to `second_approval_pending`.
  *
  * Source: docs/architecture/sprint-2-plan.md §2
+ *
+ * Authority note (Sprint 4 H-4):
+ *   ScenarioResult.second_approval_required is set by the Scenario Engine, which
+ *   evaluates all three gate criteria (financial threshold, execution complexity,
+ *   and high/critical ExternalRiskSignal severity) deterministically before the
+ *   result is stored. We trust that value here rather than re-evaluating via
+ *   requiresSecondApproval() — the function's criterion 3 (ActiveRiskSignal[])
+ *   uses the legacy lowercase-severity type and is never populated at this call
+ *   site, making a dispatcher-side re-evaluation both redundant and incomplete.
  */
 async function runApprovalGateConsequence(
   caseId: string,
@@ -181,9 +190,8 @@ async function runApprovalGateConsequence(
     return;
   }
 
-  const gate = requiresSecondApproval(result, SCENARIO_CONFIG);
-
-  if (!gate.required) {
+  // Trust the engine's authoritative gate decision (see authority note above).
+  if (!result.second_approval_required) {
     return;
   }
 
@@ -201,6 +209,7 @@ async function runApprovalGateConsequence(
 
   const nextTransitions = WORKFLOW_TRANSITIONS[nextState];
   const availableActions = Object.keys(nextTransitions) as WorkflowEvent[];
+
 
   const gateState: WorkflowStateResponse = {
     case_id: caseId,

@@ -30,6 +30,14 @@ export interface ApprovalGateResult {
  * @param result       The ScenarioResult stored after the engine ran.
  * @param config       The versioned ScenarioConfig (provides threshold).
  * @param riskSignals  Active risk signals at time of decision (may be empty).
+ *
+ * NOTE — authority boundary (Sprint 4 H-4):
+ *   The Scenario Engine evaluates all three criteria and stores the result in
+ *   ScenarioResult.second_approval_required. The dispatcher trusts that field
+ *   directly rather than calling this function, because criterion 3 here uses the
+ *   legacy ActiveRiskSignal[] (lowercase severity) type which is never populated
+ *   in the dispatcher path. Use this function in tests and for standalone gate
+ *   evaluation against manually assembled ActiveRiskSignal arrays.
  */
 export function requiresSecondApproval(
   result: ScenarioResult,
@@ -88,6 +96,7 @@ export const FORBIDDEN_APPROVAL_EMITTERS: ReadonlySet<string> = new Set([
   'lena',
   'system',
 ]);
+
 
 /**
  * Validate that a `second_approval_confirmed` or `second_approval_rejected` event
