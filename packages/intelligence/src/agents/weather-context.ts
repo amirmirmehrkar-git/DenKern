@@ -28,7 +28,7 @@ import type {
 } from '@denkkern/types';
 import type { ExternalRiskAgent, AgentContext } from '../types.js';
 import { validateSignals } from '../validate.js';
-import weatherEventsFixture from '../fixtures/weather-events.json' assert { type: 'json' };
+import weatherEventsFixture from '../fixtures/weather-events.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // RawWeatherEvent — internal type for fixture / future feed
