@@ -414,123 +414,142 @@ No other file changes. The adapter boundary holds.
 ## Addendum — Blocker: Live Integration Frozen (2026-06-04)
 
 > **Status change:** Sprint 3 live James integration is **BLOCKED**.
-> No new implementation toward live `POST /predict` wiring until all four
-> blockers below are resolved. See decisions at end of this section.
+> No new implementation toward live `POST /predict` wiring until all
+> service-maturity blockers below are resolved.
 
 ### Trigger
 
-James provided:
-1. A README for the FastAPI inference wrapper (`inference/fastapi_wrapper.py`)
-2. A verbal update on preprocessing and coverage gaps
-
-Both together revealed that the Sprint 3 assumption — *MMSI alone is sufficient
-to call `POST /predict`* — is incorrect.
+James provided the FastAPI inference wrapper README, which revealed that
+`POST /predict` requires full graph snapshots as input — not MMSI alone.
+This appeared to be an architectural blocker.
 
 ---
 
-### Blocker Analysis
+### Architecture Question — Resolved (2026-06-04)
 
-#### B1 — `POST /predict` requires full graph snapshots, not MMSI
+James confirmed:
 
-The README (`## Input Feature Schema`) documents the actual request body:
+> **Graph snapshot construction stays on James's side. DenkKern will never
+> build `vessel_nodes`, `port_nodes`, `grid_nodes`, or edges. DenkKern will
+> never implement normalization logic.**
 
-```json
-{
-  "snapshots": [
-    {
-      "timestamp": "...",
-      "vessel_nodes": [...],
-      "port_nodes": [...],
-      "grid_nodes": [...],
-      "edges": [...]
-    }
-  ],
-  "mc_samples": 20
-}
-```
+This resolves the architecture question completely. Option (a) is confirmed:
+James wraps all graph construction and preprocessing internally. DenkKern calls
+a higher-level service endpoint. The existing adapter boundary design
+(`MMSI → James service → PredictionOutput adapter → Scenario Engine`) is valid.
 
-This is **not a MMSI-addressed API**. The caller must construct a temporal
-graph window of up to 6 snapshots with all node/edge features pre-processed
-before calling `/predict`. MMSI is a feature inside `vessel_nodes`, not a
-top-level request key.
+The `JamesHTTPAdapter` architecture is **not invalidated**. The adapter will
+call James' service endpoint, which handles all graph construction internally.
+What format that endpoint accepts (MMSI, voyage context, or something else)
+is determined by James' service design — not by DenkKern.
 
-**Impact:** The entire `JamesHTTPAdapter` design assumed `POST /predict { mmsi }`.
-That design is invalid. The true request requires:
+---
 
-- AIS snapshot series (up to 6 time steps)
-- Vessel feature vectors (including cyclical heading encoding)
-- Port and grid feature vectors padded to model input size
-- Training-time z-score normalization applied
-- Edge list with exact source/target node IDs
+### Remaining Blockers — Service Maturity Only
 
-Building this client-side in TypeScript would mean re-implementing James'
-entire preprocessing pipeline inside DenkKern — which is explicitly out of
-scope and architecturally wrong.
+The architecture is resolved. Integration is blocked solely on the maturity
+of James' service:
 
-#### B2 — nodes/edges artifacts not available
+#### B1 — Preprocessing still being reworked
 
-The graph node/edge files required to construct requests have not been
-uploaded or shared. Without them, even a Python-side test call to `/predict`
-is not possible.
+The AIS preprocessing pipeline that feeds the graph construction is actively
+being reworked. Calling the service against this pipeline would produce
+unreliable results. Integration must wait for a stable preprocessing output.
 
-#### B3 — Normalization not reproducible
+#### B2 — Normalization not finalized
 
-James has confirmed normalization needs verification and may need to be moved
-into a reproducible scikit-learn pipeline. Until this is done, any
-client-constructed feature vectors would produce undefined model behaviour
-(garbage predictions due to un-normalised inputs).
+Training-time z-score normalization has not been moved into a reproducible
+pipeline yet. Model predictions are unreliable until normalization is locked.
+This is a James-side concern only — DenkKern has no normalization logic and
+never will.
+
+#### B3 — nodes/edges artifacts incomplete
+
+The graph node/edge artifacts (`grid_nodes.csv`, `grid_edges.csv`,
+`vessel_hour_observations.csv`) that feed the service are not yet in a
+stable, uploadable state. Without these the service cannot run consistently.
 
 #### B4 — Coverage gap west of Cuxhaven
 
-The model has a major coverage issue for the Hamburg approaches west of
-Cuxhaven — the exact corridor MSC Barcelona would transit for the CASE-001
-pilot. Predictions for vessels in this zone are unreliable until the coverage
-gap is resolved.
+The model has a known coverage issue for the Hamburg approaches west of
+Cuxhaven — the exact corridor MSC Barcelona transits for the CASE-001 pilot.
+Predictions for vessels in this zone are unreliable until the gap is resolved.
 
 ---
 
-### Decision
+### Architectural Decisions — Permanently Closed
+
+These questions do not need to be revisited:
+
+| Question | Answer | Confirmed by |
+|---|---|---|
+| Will DenkKern build `vessel_nodes` / `port_nodes` / `grid_nodes`? | **No. Never.** | James, 2026-06-04 |
+| Will DenkKern implement normalization? | **No. Never.** | James, 2026-06-04 |
+| Will DenkKern build graph edges or edge lists? | **No. Never.** | James, 2026-06-04 |
+| Does graph snapshot construction stay inside James' service boundary? | **Yes. Permanently.** | James, 2026-06-04 |
+| Is the adapter boundary `MMSI → James service → PredictionOutput` valid? | **Yes. Confirmed.** | James, 2026-06-04 |
+
+---
+
+### Integration Path — Confirmed Shape
+
+When James' service is mature:
+
+```
+DenkKern (TypeScript)
+  → POST <JAMES_API_URL>/predict  { mmsi, required_by, ... }
+  ← JamesPredictionResponse (JSON — shape TBD by James)
+  → validate (james-raw-schema.ts)
+  → mapJamesRawToMinimal() (mapper.ts)
+  → normalizeMinimalPrediction()
+  → PredictionOutput
+  → Scenario Engine (unchanged)
+```
+
+James owns everything between the HTTP call and the response. DenkKern owns
+everything from the HTTP response boundary inward. This boundary does not change.
+
+The `james-raw.ts` / `mapper.ts` / `james-raw-schema.ts` isolation pattern
+ensures that when James finalises his response shape, only those three files
+need updating. No downstream changes.
+
+---
+
+### Decision Table
 
 | Item | Decision |
 |---|---|
-| Live `POST /predict` wiring | **FROZEN** — do not implement |
-| `JamesHTTPAdapter` live path | **BLOCKED** — skeleton remains; live HTTP call not wired |
-| MMSI → direct `/predict` assumption | **INVALIDATED** — remove from all active scope |
-| Graph snapshot generation inside DenkKern | **OUT OF SCOPE** — permanently. DenkKern is not a graph preprocessing service |
-| `JamesPredictionResponse` contract in §3.2 | **SUPERSEDED** by the README's `snapshots[]` input schema. Will be redesigned when James confirms the integration boundary |
+| Live `POST /predict` wiring | **FROZEN** — service not mature |
+| `JamesHTTPAdapter` live path | **BLOCKED** — skeleton retained; live call not wired |
+| Graph snapshot construction inside DenkKern | **CLOSED — OUT OF SCOPE PERMANENTLY** |
+| Normalization logic inside DenkKern | **CLOSED — OUT OF SCOPE PERMANENTLY** |
+| Adapter boundary architecture (`MMSI → service → PredictionOutput`) | **CONFIRMED VALID** |
+| `JamesPredictionResponse` contract | Pending — James to define when service stabilises |
 
 **What remains in place (do not remove):**
 
 | Item | Status | Reason |
 |---|---|---|
-| `ShipmentContext.mmsi` field | ✅ Keep | Still needed when integration resumes; used for operator context |
-| `packages/prediction-adapter` skeleton | ✅ Keep | `PredictionAdapterPort`, `MockPredictionAdapter`, `mapper.ts` boundary — valid infrastructure |
-| Mock fallback (`prediction.json`) | ✅ Keep | All demo and pilot work continues on mock; fully calibrated |
-| `normalizeMinimalPrediction()` | ✅ Keep | Adapter boundary function; correct regardless of James' input format |
-| Mapper boundary pattern | ✅ Keep | `JamesPredictionRaw` is isolated; only mapper files change when contract stabilises |
+| `ShipmentContext.mmsi` field | ✅ Keep | Required when integration resumes |
+| `packages/prediction-adapter` skeleton | ✅ Keep | Correct boundary architecture; ready for live wiring |
+| Mock fallback (`prediction.json`) | ✅ Keep | All demo and pilot work; fully calibrated |
+| `normalizeMinimalPrediction()` | ✅ Keep | Adapter boundary function; unchanged by James' format |
+| `james-raw.ts` / `mapper.ts` / `james-raw-schema.ts` | ✅ Keep | Isolation pattern holds; only these files change when James' response shape is confirmed |
 
 ---
 
-### What James Must Confirm Before Integration Can Resume
+### What James Must Provide Before Integration Resumes
 
-| Gap | Required Action from James |
+| Blocker | Required from James |
 |---|---|
-| **Request contract** | Confirm whether DenkKern should call a higher-level MMSI-to-snapshot endpoint, or whether James wraps snapshot construction server-side |
-| **nodes/edges artifacts** | Upload grid_nodes.csv, grid_edges.csv, vessel\_hour\_observations.csv with stable schema |
-| **Normalization** | Provide a reproducible normalizer (scikit-learn pipeline, JSON stats file, or equivalent) that DenkKern can call or verify against |
-| **Coverage map** | Confirm Hamburg/Cuxhaven corridor is covered before using model for CASE-001 pilot |
-| **Integration boundary** | Confirm whether the intended model-facing API is: (a) MMSI → James handles graph construction, or (b) DenkKern must construct snapshots |
+| B1 — Preprocessing | Stable preprocessing pipeline producing consistent graph inputs |
+| B2 — Normalization | Reproducible normalizer locked and applied consistently |
+| B3 — Artifacts | `grid_nodes.csv`, `grid_edges.csv`, `vessel_hour_observations.csv` stable and complete |
+| B4 — Coverage | Hamburg / Cuxhaven corridor coverage verified |
+| Response contract | Confirm `JamesPredictionResponse` field names and types for the service endpoint DenkKern will call |
 
-**Until (a) vs (b) is confirmed, no HTTP adapter work proceeds.**
-
-If James confirms option (a) — MMSI-addressed, James constructs the graph
-internally — then `JamesHTTPAdapter` can be built with a much simpler contract
-and the existing `james-raw.ts` / `mapper.ts` approach remains valid.
-
-If James confirms option (b) — caller must supply snapshots — then the
-integration path requires a dedicated Python microservice between DenkKern
-and the model, and the TypeScript adapter would call that service rather than
-the raw FastAPI endpoint.
+None of these require architectural decisions. They are engineering completion
+items on James' side.
 
 ---
 
@@ -540,10 +559,11 @@ the raw FastAPI endpoint.
 |---|---|
 | Agent Platform Foundation | ✅ Done — committed |
 | WeatherContextAgent | ✅ Done — committed |
-| Future agents (customs, sanctions, etc.) | ✅ Unblocked |
+| Agent System Review & MVP Hardening | ✅ Done — committed |
+| Route field hardening (H-1 to H-5 from review) | 🔲 Next sprint |
+| Future agents | ✅ Unblocked |
 | Demo hardening (CASE-001 mock flow) | ✅ Unblocked |
 | Sprint 2 / 2.5 engine layer | ✅ Closed |
-| Documentation and gap analysis | ✅ Unblocked |
 
 ---
 
@@ -552,12 +572,12 @@ the raw FastAPI endpoint.
 The original DoD in §7 is **suspended**. Sprint 3 is redefined as:
 
 **Sprint 3 closes when:**
-1. All James-independent items are implemented and tsc-clean (agent platform,
-   weather agent, demo hardening).
-2. The prediction-adapter skeleton is maintained in a state where live
-   integration can resume without restructuring.
-3. James resolves all four blockers above AND confirms the integration boundary.
-4. A revised `JamesHTTPAdapter` design is reviewed and agreed before implementation.
+1. All James-independent hardening items are complete and tsc-clean.
+2. The prediction-adapter skeleton is maintained and ready for live wiring
+   without restructuring.
+3. James resolves all four service-maturity blockers and provides the
+   `JamesPredictionResponse` field names for the service endpoint.
+4. Integration is implemented against James' confirmed response contract.
 
 The pilot demo proceeds on mock data. Mock data is production-equivalent for
 the Hamburg CASE-001 scenario and does not require live James predictions.
