@@ -1,10 +1,12 @@
 {
-  "_comment": "ERP context for SHIP-001 \u2014 mock adapter output. See docs/architecture/06-data-contracts.md \u00a72",
+  "_comment": "ERP context for SHIP-001 — mock adapter output. See docs/architecture/06-data-contracts.md §2",
   "shipment_id": "SHIP-001",
-  "shipment_name": "Marine Bolts \u2014 MSC Barcelona",
+  "shipment_name": "Marine Bolts — MSC Barcelona",
   "vessel_name": "MSC Barcelona",
   "current_location": "Southern coast of Spain",
   "destination": "Hamburg",
+  "_mmsi_comment": "Sprint 3: MMSI manually entered by operator. 215394000 = MSC Barcelona (real vessel, used for pilot demo).",
+  "mmsi": "215394000",
   "customer_id": "CUST-001",
   "production_context": {
     "daily_downtime_cost_eur": 150000,

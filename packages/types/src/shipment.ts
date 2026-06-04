@@ -17,6 +17,12 @@ export interface ShipmentContext {
   current_location?: string;
   destination: string;              // e.g. "Hamburg"
 
+  // Sprint 3: Maritime Mobile Service Identity — 9-digit vessel identifier.
+  // Entered manually by the operator for the pilot. Used as the primary key
+  // for James' prediction API. Absent = no live prediction; falls back to mock.
+  // Post-pilot: derived automatically from shipment/container/booking lookup.
+  mmsi?: string;
+
   // Customer / ERP
   customer_id: string;
   production_context: {
