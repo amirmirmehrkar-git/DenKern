@@ -28,3 +28,40 @@ export { SupplierRiskAgent } from './agents/supplier-risk.js';
 // Validation utilities (exposed for downstream testing)
 export { validateSignal, validateSignals } from './validate.js';
 export type { ValidationResult, BatchValidationResult } from './validate.js';
+
+// ---------------------------------------------------------------------------
+// Agent Platform Foundation
+// ---------------------------------------------------------------------------
+
+// Execution result model
+export {
+  makeSuccessResult,
+  makeFailureResult,
+  makeTimeoutResult,
+  makeSkippedResult,
+} from './execution-result.js';
+export type { AgentExecutionResult, AgentExecutionStatus } from './execution-result.js';
+
+// Agent health
+export { computeHealthStatus, DEFAULT_HEALTH_THRESHOLDS } from './health.js';
+export type {
+  AgentHealthStatus,
+  AgentHealthLevel,
+  HealthThresholds,
+  HealthSnapshot,
+} from './health.js';
+
+// Agent metrics
+export { computeAgentMetrics } from './metrics.js';
+export type { AgentMetrics } from './metrics.js';
+
+// Audit trail
+export { AgentAuditTrail } from './audit.js';
+
+// Agent registry
+export { AgentRegistry } from './agent-registry.js';
+export type { AgentRegistration, RegistrationOptions } from './agent-registry.js';
+
+// Agent runner (primary platform entry point)
+export { AgentRunner } from './agent-runner.js';
+export type { RunnerConfig, RunResult } from './agent-runner.js';
