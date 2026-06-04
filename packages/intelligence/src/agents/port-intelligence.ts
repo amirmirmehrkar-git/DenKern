@@ -14,7 +14,7 @@
 import type { ExternalRiskSignal, ExternalRiskSignalType, ExternalRiskSeverity } from '@denkkern/types';
 import type { ExternalRiskAgent, AgentContext, RawPortEvent } from '../types.js';
 import { validateSignals } from '../validate.js';
-import portEventsFixture from '../fixtures/port-events.json' assert { type: 'json' };
+import portEventsFixture from '../fixtures/port-events.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // Classification helpers

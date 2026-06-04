@@ -20,7 +20,7 @@
 import type { ExternalRiskSignal, ExternalRiskSignalType, ExternalRiskSeverity } from '@denkkern/types';
 import type { ExternalRiskAgent, AgentContext, RawGeopoliticalEvent } from '../types.js';
 import { validateSignals } from '../validate.js';
-import geoEventsFixture from '../fixtures/geopolitical-events.json' assert { type: 'json' };
+import geoEventsFixture from '../fixtures/geopolitical-events.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // Classification helpers

@@ -13,7 +13,7 @@
 import type { ExternalRiskSignal, ExternalRiskSeverity } from '@denkkern/types';
 import type { ExternalRiskAgent, AgentContext, RawSupplierEvent } from '../types.js';
 import { validateSignals } from '../validate.js';
-import supplierEventsFixture from '../fixtures/supplier-events.json' assert { type: 'json' };
+import supplierEventsFixture from '../fixtures/supplier-events.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // Classification helpers
