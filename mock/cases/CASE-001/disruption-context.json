@@ -2,16 +2,16 @@
   "_comment": "Assembled disruption context for CASE-001 — snapshotted at context_confirmed. See docs/architecture/06-data-contracts.md §4",
   "case_id": "CASE-001",
   "shipment_id": "SHIP-001",
-  "assembled_at": "2026-05-25T08:32:00Z",
+  "assembled_at": "2026-06-04T09:00:00Z",
   "prediction": {
     "shipment_id": "SHIP-001",
     "model_version": "eta-delay-v0.1",
-    "generated_at": "2026-05-25T08:30:00Z",
+    "generated_at": "2026-06-04T08:55:00Z",
     "eta": {
-      "baseline":    "2026-05-28",
-      "expected":    "2026-06-02",
-      "optimistic":  "2026-05-30",
-      "pessimistic": "2026-06-06"
+      "baseline":    "2026-06-07",
+      "expected":    "2026-06-12",
+      "optimistic":  "2026-06-09",
+      "pessimistic": "2026-06-16"
     },
     "delay": {
       "expected_delay_days": 5,
@@ -35,13 +35,13 @@
     "production_context": {
       "daily_downtime_cost_eur": 150000,
       "critical_part": "Marine-quality bolts",
-      "required_by": "2026-05-28"
+      "required_by": "2026-06-07"
     },
     "inventory": {
       "replacement_available": true,
       "replacement_location": "Poland warehouse",
       "replacement_cost_eur": 500000,
-      "replacement_arrival_date": "2026-05-27"
+      "replacement_arrival_date": "2026-06-06"
     },
     "freight_options": [
       {
@@ -49,7 +49,7 @@
         "from": "Amsterdam",
         "to": "Hamburg",
         "cost_eur": 200000,
-        "estimated_arrival_date": "2026-05-30",
+        "estimated_arrival_date": "2026-06-09",
         "confidence_score": 0.70
       }
     ]
@@ -66,7 +66,7 @@
       "region_id": "hamburg-port",
       "event_type": "strike_risk",
       "severity": "medium",
-      "description": "Hamburg port workers union announced 48-hour warning strike, effective 2026-05-27",
+      "description": "Hamburg port workers union announced 48-hour warning strike, effective 2026-06-05",
       "estimated_delay_impact_days": 2,
       "source": "simulated"
     }
@@ -76,12 +76,12 @@
       "signal_id": "ERS-001",
       "signal_type": "PORT_STRIKE",
       "severity": "HIGH",
-      "confidence": 0.82,
+      "confidence": 0.88,
       "source_type": "simulated",
-      "source_name": "fixture/news-monitor",
-      "location": "Port of Hamburg",
-      "time_window": { "valid_from": "2026-05-27", "valid_until": "2026-05-29" },
-      "description": "Hamburg port workers union confirmed a 48-hour warning strike starting 2026-05-27, affecting container and bulk cargo terminals.",
+      "source_name": "ver.di press release (simulated)",
+      "location": "Hamburg",
+      "time_window": { "valid_from": "2026-06-05", "valid_until": "2026-06-07" },
+      "description": "Hamburg port workers union confirmed a 48-hour warning strike starting 2026-06-05, affecting container and bulk cargo terminals.",
       "decision_relevance": "The original shipment is due to berth at Hamburg during the strike window. Waiting exposes production to the full delay plus potential docking refusal.",
       "recommended_engine_effect": "increase_wait_risk",
       "estimated_additional_delay_days": 2
@@ -90,11 +90,11 @@
       "signal_id": "ERS-002",
       "signal_type": "MARITIME_SECURITY_WARNING",
       "severity": "HIGH",
-      "confidence": 0.71,
+      "confidence": 0.85,
       "source_type": "simulated",
-      "source_name": "fixture/maritime-monitor",
-      "route": "Bay of Biscay — North Atlantic approach",
-      "time_window": { "valid_from": "2026-05-25", "valid_until": "2026-05-30" },
+      "source_name": "UKMTO advisory (simulated)",
+      "route": "North Atlantic — Bay of Biscay approach",
+      "time_window": { "valid_from": "2026-06-02", "valid_until": "2026-06-09" },
       "description": "Severe weather warning (Beaufort 9–10, 5–6m swell) active across Bay of Biscay. Several vessels diverted to Bilbao anchorage.",
       "decision_relevance": "MSC Barcelona is currently transiting this route. Severe conditions may cause a further 1–2 day deviation beyond the model prediction.",
       "recommended_engine_effect": "flag_second_approval",
@@ -106,9 +106,9 @@
       "severity": "MEDIUM",
       "confidence": 0.55,
       "source_type": "simulated",
-      "source_name": "fixture/intelligence-monitor",
+      "source_name": "UK Border Force advisory (simulated)",
       "route": "North Sea / English Channel",
-      "time_window": { "valid_from": "2026-05-20" },
+      "time_window": { "valid_from": "2026-06-01" },
       "description": "Ongoing EU–UK customs friction causing intermittent inspection delays at Dover Strait. Average additional dwell: 4–6 hours.",
       "decision_relevance": "Low direct impact for Hamburg-bound cargo. Informational only.",
       "recommended_engine_effect": "increase_urgency"
