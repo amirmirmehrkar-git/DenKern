@@ -8,6 +8,13 @@
  * Replace the fixture loader with a real intelligence feed adapter when ready.
  *
  * Agents NEVER recommend scenarios. Agents NEVER approve decisions.
+ *
+ * P0-3 fix — direct vs global-scope engine effect:
+ *   WAR_RISK / CRITICAL events only trigger flag_second_approval when the
+ *   event directly overlaps the shipment route or destination port.
+ *   Global compliance signals (e.g. Red Sea war risk for a Hamburg-bound vessel)
+ *   are still surfaced but assigned increase_urgency — they should not auto-trigger
+ *   supervisor approval for a case with no route overlap.
  */
 
 import type { ExternalRiskSignal, ExternalRiskSignalType, ExternalRiskSeverity } from '@denkkern/types';
@@ -38,12 +45,53 @@ function normaliseSeverity(hint?: string): ExternalRiskSeverity {
   }
 }
 
-function decisionRelevance(event: RawGeopoliticalEvent, signalType: ExternalRiskSignalType, context: AgentContext): string {
+/**
+ * True when the geopolitical event's region or route has a direct overlap with
+ * the shipment's destination port or route.
+ *
+ * Used to distinguish operational risk (direct match → may trigger second approval)
+ * from global compliance signals (no match → increase_urgency only).
+ */
+function isDirectOperationalMatch(event: RawGeopoliticalEvent, context: AgentContext): boolean {
+  const dest     = context.destination_port.toLowerCase();
+  const route    = (context.route ?? '').toLowerCase();
+  const region   = event.region.toLowerCase();
+  const evtRoute = (event.route ?? '').toLowerCase();
+
+  // Destination overlap
+  if (region.includes(dest) || evtRoute.includes(dest)) return true;
+
+  // Route segment overlap — bidirectional substring, split on '/' and '—'
+  if (route !== '') {
+    const regionParts  = region.split(/[/—]/).map((s) => s.trim()).filter(Boolean);
+    const evtRouteParts = evtRoute.split(/[/—]/).map((s) => s.trim()).filter(Boolean);
+    if (regionParts.some((r)   => route.includes(r)))   return true;
+    if (evtRouteParts.some((r) => route.includes(r)))   return true;
+  }
+
+  return false;
+}
+
+function decisionRelevance(
+  event: RawGeopoliticalEvent,
+  signalType: ExternalRiskSignalType,
+  context: AgentContext,
+  directMatch: boolean,
+): string {
   if (signalType === 'WAR_RISK') {
+    if (directMatch) {
+      return (
+        `Active conflict zone advisory covering ${event.route ?? event.region}. ` +
+        `Vessels transiting this route face elevated insurance and diversion risk. ` +
+        `The WAIT scenario is materially affected — supervisor review required.`
+      );
+    }
+    // Global compliance signal — no direct route overlap
     return (
-      `Active conflict zone advisory covering ${event.route ?? event.region}. ` +
-      `Vessels transiting this route face elevated insurance and diversion risk. ` +
-      `The WAIT scenario is materially affected if the original route passes through this region.`
+      `Global conflict zone advisory (${event.route ?? event.region}). ` +
+      `Included for compliance awareness — no direct route overlap with this shipment. ` +
+      `Verify cargo and vessel eligibility under current war-risk insurance and sanctions rules ` +
+      `before committing to any scenario.`
     );
   }
   if (signalType === 'MARITIME_SECURITY_WARNING') {
@@ -82,7 +130,7 @@ function isRelevant(event: RawGeopoliticalEvent, context: AgentContext): boolean
   if (region.includes(dest) || evtRoute.includes(dest)) return true;
   // Route overlap
   if (route !== '' && (region.split('/').some((r) => route.includes(r.trim())) || evtRoute.includes(route))) return true;
-  // Global-scope events (sanctions, war risk) are always relevant
+  // Global-scope events (sanctions, war risk) are always relevant for compliance
   const signalType = classifyEventType(event.event_type);
   if (signalType === 'WAR_RISK' || signalType === 'SANCTIONS') return true;
 
@@ -106,8 +154,23 @@ export class GeopoliticalRiskAgent implements ExternalRiskAgent {
     const relevant = this.events.filter((e) => isRelevant(e, context));
 
     const candidates = relevant.map((event): unknown => {
-      const signalType = classifyEventType(event.event_type);
-      const severity   = normaliseSeverity(event.severity_hint);
+      const signalType  = classifyEventType(event.event_type);
+      const severity    = normaliseSeverity(event.severity_hint);
+      const directMatch = isDirectOperationalMatch(event, context);
+
+      // Engine effect:
+      //   flag_second_approval — CRITICAL or WAR_RISK that directly overlaps shipment route.
+      //   increase_wait_risk   — HIGH direct-match events.
+      //   increase_urgency     — Global compliance signals (no route overlap) and all lower-severity events.
+      //
+      // P0-3: WAR_RISK that does not overlap the shipment route (e.g. Red Sea for Hamburg-bound
+      // vessel on Bay of Biscay — North Sea route) uses increase_urgency, not flag_second_approval.
+      const recommended_engine_effect =
+        (severity === 'CRITICAL' || signalType === 'WAR_RISK') && directMatch
+          ? 'flag_second_approval'
+          : severity === 'HIGH' && directMatch
+            ? 'increase_wait_risk'
+            : 'increase_urgency';
 
       return {
         signal_id:   `GEO-${event.event_id}`,
@@ -122,13 +185,8 @@ export class GeopoliticalRiskAgent implements ExternalRiskAgent {
           ...(event.valid_until != null ? { valid_until: event.valid_until } : {}),
         },
         description:        event.description,
-        decision_relevance: decisionRelevance(event, signalType, context),
-        recommended_engine_effect:
-          severity === 'CRITICAL' || signalType === 'WAR_RISK'
-            ? 'flag_second_approval'
-            : severity === 'HIGH'
-              ? 'increase_wait_risk'
-              : 'increase_urgency',
+        decision_relevance: decisionRelevance(event, signalType, context, directMatch),
+        recommended_engine_effect,
       };
     });
 
