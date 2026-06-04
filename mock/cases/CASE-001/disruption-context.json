@@ -30,6 +30,7 @@
     "vessel_name": "MSC Barcelona",
     "current_location": "Southern coast of Spain",
     "destination": "Hamburg",
+    "route": "Bay of Biscay — North Sea",
     "customer_id": "CUST-001",
     "production_context": {
       "daily_downtime_cost_eur": 150000,
