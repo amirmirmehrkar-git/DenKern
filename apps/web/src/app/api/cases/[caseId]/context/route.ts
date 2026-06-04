@@ -12,7 +12,7 @@
  *      parallel via the Agent Platform (AgentRegistry + AgentAuditTrail).
  *      Fixture-backed only for MVP; no real web calls, no LLM calls.
  *   4. Merge agent output with existing static signals.
- *   5. Deduplicate by (signal_type, location, source_name) — static signals
+ *   5. Deduplicate by (signal_type, location??route) — static signals
  *      take precedence (case-specific overrides survive).
  *   6. Return enriched DisruptionContext to the client.
  *
@@ -42,17 +42,20 @@ interface RouteParams {
 }
 
 // ---------------------------------------------------------------------------
-// Deduplication key — matches on signal_type + location + source_name.
-// Static signals (from disruption-context.json) win over agent-generated ones:
-// static signals are added last and a Map retains the final write.
-// Rationale: case-specific operator overrides must survive agent regeneration.
+// Deduplication key — matches on signal_type + geographic identity.
+//
+// P0-2 fix: source_name is NOT part of the key.
+//   Old key: (signal_type, location, source_name) — different sources for the
+//   same real-world event produced separate cards in the UI.
+//   New key: (signal_type, location ?? route) — same event collapses to one card
+//   regardless of whether it came from a static fixture or an agent.
+//   Static signals still win on collision: they are written last in mergeSignals().
 // ---------------------------------------------------------------------------
 
 function deduplicationKey(s: ExternalRiskSignal): string {
   return [
     s.signal_type,
-    (s.location ?? '').toLowerCase().trim(),
-    s.source_name.toLowerCase().trim(),
+    (s.location ?? s.route ?? '').toLowerCase().trim(),
   ].join('::');
 }
 
