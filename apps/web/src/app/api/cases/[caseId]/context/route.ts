@@ -8,8 +8,9 @@
  *   1. Load base DisruptionContext from the mock adapter (includes any static
  *      external_risk_signals already embedded in disruption-context.json).
  *   2. Build AgentContext from the loaded context fields.
- *   3. Run collectExternalRiskSignals(agentContext) — fixture-backed agents,
- *      no real web calls, no LLM calls.
+ *   3. Run AgentRunner.run(agentContext) — dispatches all registered agents in
+ *      parallel via the Agent Platform (AgentRegistry + AgentAuditTrail).
+ *      Fixture-backed only for MVP; no real web calls, no LLM calls.
  *   4. Merge agent output with existing static signals.
  *   5. Deduplicate by (signal_type, location, source_name) — static signals
  *      take precedence (case-specific overrides survive).
@@ -32,7 +33,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdapter } from '../../../../../lib/adapters/index.js';
-import { collectExternalRiskSignals } from '@denkkern/intelligence';
+import { getAgentRunner } from '../../../../../lib/intelligence/agent-platform-singleton.js';
 import type { DisruptionContext, ExternalRiskSignal } from '@denkkern/types';
 import type { AgentContext } from '@denkkern/intelligence';
 
@@ -108,15 +109,22 @@ export async function GET(
     ...(baseContext.shipment_context.vessel_name != null
       ? { vessel_name: baseContext.shipment_context.vessel_name }
       : {}),
+    // Sprint 4 H-3: wire route field so route-level risk signals (e.g. North Sea
+    // route weather events) are included in agent relevance matching.
+    // exactOptionalPropertyTypes: omit key when absent rather than assign undefined.
+    ...(baseContext.shipment_context.route != null
+      ? { route: baseContext.shipment_context.route }
+      : {}),
   };
 
-  // ── 3. Run intelligence agents (fixture-backed, isolated failures) ─────────
+  // ── 3. Run intelligence agents via Agent Platform (fixture-backed, isolated failures) ──
   let agentSignals: ExternalRiskSignal[] = [];
   try {
-    agentSignals = await collectExternalRiskSignals(agentContext);
+    const runResult = await getAgentRunner().run(agentContext);
+    agentSignals = runResult.signals;
   } catch (err) {
-    // collectExternalRiskSignals() isolates individual agent failures via
-    // Promise.allSettled, so this catch handles only catastrophic errors.
+    // AgentRunner isolates individual agent failures via Promise.allSettled, so
+    // this catch handles only catastrophic runner-level errors.
     // Degrade gracefully: return base context with static signals only.
     console.warn('[GET /api/cases/:caseId/context] intelligence collection failed:', err);
   }

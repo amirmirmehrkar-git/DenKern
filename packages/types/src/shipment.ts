@@ -23,6 +23,10 @@ export interface ShipmentContext {
   // Post-pilot: derived automatically from shipment/container/booking lookup.
   mmsi?: string;
 
+  // Sprint 4: Primary route description — used for route-level risk signal matching.
+  // e.g. "Bay of Biscay — North Sea". Absent = route-specific signals silently skipped.
+  route?: string;
+
   // Customer / ERP
   customer_id: string;
   production_context: {
