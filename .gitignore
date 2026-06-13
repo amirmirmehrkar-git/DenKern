@@ -29,6 +29,15 @@ build/
 # Editor
 .vscode/settings.json.bak
 
+# Cursor IDE — local rules, not shared project config
+.cursor/
+
+# Next.js auto-generated — must not be committed (re-created by next dev/build)
+apps/web/next-env.d.ts
+
+# Temp / scratch scripts — naming convention: _tmp-*.mjs
+scripts/_tmp-*.mjs
+
 # Lockfiles — only the root package-lock.json is canonical.
 # Do not commit nested lockfiles created by running npm install inside packages/.
 packages/*/package-lock.json

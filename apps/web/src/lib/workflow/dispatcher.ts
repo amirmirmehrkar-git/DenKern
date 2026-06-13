@@ -16,7 +16,7 @@
  * read/write layer — it does not contain transition rules.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { WORKFLOW_TRANSITIONS } from '@denkkern/types';
 import { runScenarioEngine, annotateFinancialImpact } from '@denkkern/engine';
@@ -26,11 +26,14 @@ import type {
   WorkflowStateResponse,
   WorkflowEventPayload,
   ScenarioConfig,
+  DecisionRecord,
 } from '@denkkern/types';
 import { assembleScenarioEngineInput } from './assemble-engine-input.js';
 import { getAdapter } from '../adapters/index.js';
 import { scenarioStore } from './scenario-store.js';
 import { validateApprovalEmitter } from './approval-gate.js';
+import { buildAndWriteDecisionRecord } from './decision-record-writer.js';
+import { initializeOutcomeTimeline } from './outcome-timeline-writer.js';
 
 // ---------------------------------------------------------------------------
 // Scenario config — loaded once at module init from config/scenario-defaults.json
@@ -122,8 +125,40 @@ export async function dispatchWorkflowEvent(
   }
 
   if (payload.event === 'decision_confirmed') {
+    // DK-601 — Write the immutable DecisionRecord.
+    // Non-blocking: a write failure is logged but does NOT prevent the approval
+    // response from returning. The state still advances to outcome_pending so the
+    // operator sees the correct next step. Re-run buildAndWriteDecisionRecord()
+    // manually if the file is missing after an error.
+    // The return value is captured so DK-705 can initialize the timeline from it.
+    let decisionRecord: DecisionRecord | null = null;
+    try {
+      decisionRecord = buildAndWriteDecisionRecord(caseId, payload);
+    } catch (err) {
+      console.error(`[DK-601] DecisionRecord write FAILED for ${caseId}:`, err);
+    }
+
+    // Existing approval gate — may advance to second_approval_pending.
     await runApprovalGateConsequence(caseId, newState);
-    // Re-read state in case the gate consequence advanced it to second_approval_pending
+
+    // DK-601 — If the gate did not fire, advance to outcome_pending.
+    // (If the gate fired, state is now second_approval_pending — leave it.)
+    await advanceToOutcomePending(caseId);
+
+    // DK-705 — Initialize the OutcomeTimeline now that outcome_capture_initiated
+    // has fired and the case is in outcome_pending state.
+    // Non-blocking: a failure is logged but does NOT prevent the decision response
+    // from returning. The timeline can be re-initialized manually by re-dispatching
+    // outcome_capture_initiated if needed.
+    if (decisionRecord !== null) {
+      try {
+        await initializeOutcomeTimeline(caseId, decisionRecord);
+      } catch (err) {
+        console.error(`[DK-705] OutcomeTimeline initialization FAILED for ${caseId}:`, err);
+      }
+    }
+
+    // Re-read — return whatever state the above consequences settled on.
     return await adapter.getWorkflowState(caseId);
   }
 
@@ -160,6 +195,56 @@ async function runScenarioConsequence(caseId: string): Promise<void> {
   const result = annotateFinancialImpact(rawResult, businessFactors);
 
   scenarioStore.set(caseId, result);
+
+  // DK-601: Persist ScenarioResult to file for restart durability.
+  // Writes scenario-result.json (engine native format, distinct from the
+  // manually crafted scenario-evaluation.json mock seed).
+  // decision-record-writer.ts reads scenario-evaluation.json first and
+  // uses this file as a fallback — so this write protects the full engine path.
+  try {
+    const mockRoot = process.env['MOCK_ROOT'] ?? process.cwd();
+    const outPath = join(mockRoot, 'mock', 'cases', caseId, 'scenario-result.json');
+    writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
+    // NTFS guard
+    JSON.parse(readFileSync(outPath, 'utf-8'));
+  } catch (err) {
+    console.error(`[DK-601] ScenarioResult file persistence failed for ${caseId}:`, err);
+  }
+}
+
+/**
+ * DK-601: Auto-invoked after DecisionRecord is written and the approval gate
+ * consequence has run.
+ *
+ * If the current state is still `decision_approved` (i.e. the gate did NOT fire
+ * a `second_approval_required` event), advances the case to `outcome_pending`
+ * via the `outcome_capture_initiated` system event.
+ *
+ * If the gate fired, the state is already `second_approval_pending` — this
+ * function detects that and returns without touching state.
+ */
+async function advanceToOutcomePending(caseId: string): Promise<void> {
+  const adapter = getAdapter();
+  const current = await adapter.getWorkflowState(caseId);
+
+  // Gate fired — do not override its transition.
+  if (current.state !== 'decision_approved') return;
+
+  const transitions = WORKFLOW_TRANSITIONS['decision_approved'];
+  const nextState: WorkflowState | undefined = transitions['outcome_capture_initiated'];
+
+  // Transition not defined (shouldn't happen after workflow.ts update, but be safe).
+  if (nextState === undefined) return;
+
+  const nextTransitions = WORKFLOW_TRANSITIONS[nextState];
+  const availableActions = Object.keys(nextTransitions) as WorkflowEvent[];
+
+  await adapter.saveWorkflowState(caseId, {
+    case_id: caseId,
+    state: nextState,
+    available_actions: availableActions,
+    updated_at: new Date().toISOString(),
+  });
 }
 
 /**

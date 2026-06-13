@@ -250,6 +250,31 @@ export default function ExecutionPage() {
         </div>
       )}
 
+      {/* Outcome tracking link — available once outcome_pending or outcome_confirmed */}
+      {(state === 'outcome_pending' || state === 'outcome_confirmed') && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <div className="card-body" style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                {state === 'outcome_confirmed' ? '✅ Outcome confirmed' : '📋 Outcome tracking active'}
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                {state === 'outcome_confirmed'
+                  ? 'The outcome has been recorded. Review the full timeline below.'
+                  : 'Checkpoints are being tracked. Confirm or mark each dimension when data is available.'}
+              </p>
+            </div>
+            <a
+              href={'/cases/' + caseId + '/outcome'}
+              className="btn btn-primary"
+              style={{ flexShrink: 0, marginLeft: 16, fontSize: 13 }}
+            >
+              View outcome timeline →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Fallback for decision_approved before auto-trigger fires */}
       {state === 'decision_approved' && (
         <div className="card" style={{ marginTop: 24 }}>

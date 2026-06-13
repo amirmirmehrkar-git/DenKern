@@ -14,6 +14,7 @@ import type {
   AlertEvent,
   DisruptionContext,
   WorkflowStateResponse,
+  OutcomeTimeline,
 } from '@denkkern/types';
 
 export interface DataAdapter {
@@ -54,8 +55,25 @@ export interface DataAdapter {
 
   /**
    * Persist a new workflow state for a given case.
-   * Mock: updates the in-memory cache (no disk write — state survives the request, not the process)
+   * Mock: updates the in-memory cache AND writes to mock/cases/:caseId/workflow-state.json
+   *       (state survives server restart)
    * Real: writes to case database
    */
   saveWorkflowState(caseId: string, state: WorkflowStateResponse): Promise<void>;
+
+  /**
+   * Return the outcome timeline for a given case.
+   * Mock: reads from mock/cases/:caseId/outcome-timeline.json
+   *       Returns null if the file does not exist (timeline not yet initialized).
+   * Real: reads from case database
+   */
+  getOutcomeTimeline(caseId: string): Promise<OutcomeTimeline | null>;
+
+  /**
+   * Persist the outcome timeline for a given case.
+   * Mock: recomputes summary, updates in-memory cache, writes to
+   *       mock/cases/:caseId/outcome-timeline.json (state survives server restart)
+   * Real: writes to case database
+   */
+  saveOutcomeTimeline(caseId: string, timeline: OutcomeTimeline): Promise<void>;
 }

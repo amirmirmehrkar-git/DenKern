@@ -30,6 +30,8 @@ export type WorkflowState =
   | 'second_approval_pending'     // STATE — entered when approval gate threshold is crossed
   | 'second_approval_confirmed'   // STATE — supervisor approved; ready for execution
   | 'second_approval_rejected'    // STATE — supervisor rejected; Lena may re-select
+  | 'outcome_pending'           // STATE — DecisionRecord written; tracking vessel; awaiting confirmation
+  | 'outcome_confirmed'         // STATE — Outcome confirmed; case memory complete
   | 'execution_started'
   | 'execution_monitoring'
   | 'audit_logged'
@@ -50,6 +52,9 @@ export type WorkflowEvent =
   | 'second_approval_required'    // EVENT — fired by system (dispatcher consequence); transitions to `second_approval_pending`
   | 'second_approval_confirmed'   // EVENT — fired by supervisor (NEVER 'lena' or 'system') — architecture rule C2
   | 'second_approval_rejected'    // EVENT — fired by supervisor; transitions to `second_approval_rejected`
+  | 'outcome_capture_initiated' // EVENT — system fires after DecisionRecord is written (DK-601)
+  | 'record_arrival'            // EVENT — operator records vessel arrival (DK-602)
+  | 'confirm_outcome'           // EVENT — operator confirms outcome (DK-604)
   | 'execution_triggered'
   | 'execution_step_updated'
   | 'audit_completed'
@@ -79,10 +84,14 @@ export const WORKFLOW_TRANSITIONS: TransitionMap = {
     scenario_selected: 'recommendation_ranked',
   },
   decision_approved: {
-    // Dispatcher fires `second_approval_required` automatically when gate threshold is crossed.
-    // If gate does not apply, `execution_triggered` is available directly.
-    second_approval_required: 'second_approval_pending',
-    execution_triggered:      'execution_started',
+    // DK-601: System fires `outcome_capture_initiated` after DecisionRecord is written.
+    // This is the normal path when the second-approval gate does not fire.
+    outcome_capture_initiated: 'outcome_pending',
+    // Second-approval gate: dispatcher fires `second_approval_required` automatically
+    // when the cost/complexity threshold is crossed.
+    second_approval_required:  'second_approval_pending',
+    // Legacy direct-to-execution path (kept for backward compatibility — pre-DK-601).
+    execution_triggered:       'execution_started',
   },
   second_approval_pending: {
     second_approval_confirmed: 'second_approval_confirmed',
@@ -92,6 +101,14 @@ export const WORKFLOW_TRANSITIONS: TransitionMap = {
   second_approval_confirmed: { execution_triggered: 'execution_started' },
   // Supervisor rejected — Lena re-evaluates from scenario selection.
   second_approval_rejected:  { scenario_selected: 'recommendation_ranked' },
+  // DK-601/602/604 — Decision Memory loop
+  outcome_pending: {
+    record_arrival:  'outcome_pending',   // self-transition: arrival data written, state unchanged
+    confirm_outcome: 'outcome_confirmed', // DK-604: operator confirms outcome
+  },
+  outcome_confirmed: {
+    case_closed: 'closed',
+  },
   execution_started:         { execution_step_updated: 'execution_monitoring' },
   execution_monitoring:      { audit_completed: 'audit_logged' },
   audit_logged:              { case_closed: 'closed' },

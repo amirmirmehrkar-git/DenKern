@@ -1,0 +1,9 @@
+{
+  "event_type": "arrival_recorded",
+  "case_id": "CASE-001",
+  "recorded_at": "2026-06-12T07:11:07.296Z",
+  "recorded_by": "operator",
+  "actual_arrival_date": "2026-07-01",
+  "baseline_arrival_date": "2026-06-20",
+  "actual_delay_days": 11
+}

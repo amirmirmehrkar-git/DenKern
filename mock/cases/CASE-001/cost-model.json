@@ -1,0 +1,14 @@
+{
+  "_comment": "Financial impact model for CASE-001 — Hamburg Precision Components GmbH. Simulates Finance department cost sheet. Used by Scenario Engine to compute estimated_cost_eur per scenario.",
+  "case_id": "CASE-001",
+  "daily_downtime_cost_eur": 150000,
+  "late_delivery_penalty_eur_per_day": 25000,
+  "penalty_trigger_day": 3,
+  "expedite_freight_cost_eur": 220000,
+  "replacement_supplier_cost_eur": 350000,
+  "max_acceptable_delay_days": 2,
+  "cost_source": "management_estimate",
+  "validated_by": null,
+  "last_updated": "2026-06-11T09:00:00Z",
+  "_note": "WAIT cost formula: max(0, predicted_delay_days - inventory_coverage_days) × daily_downtime_cost_eur. For this case: (14 - 3) × 150000 = 1,650,000 EUR. Expedite avoids downtime entirely at 220,000 EUR. Replacement supplier avoids downtime at 350,000 EUR."
+}

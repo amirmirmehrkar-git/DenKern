@@ -22,20 +22,23 @@ export const STATE_ORDER: Record<WorkflowState, number> = {
   recommendation_ranked:     7,
   decision_pending:          8,
   decision_approved:         9,
-  // Second-approval states occupy ordinals 10–12.
+  // Second-approval states occupy ordinals 10-11.
   // second_approval_rejected sits at 10 because it steps backwards toward re-selection.
   second_approval_pending:   10,
   second_approval_confirmed: 11,
-  second_approval_rejected:  10, // Same ordinal as pending — treated as a lateral state
-  execution_started:         12,
-  execution_monitoring:      13,
-  audit_logged:              14,
-  closed:                    15,
+  second_approval_rejected:  10, // Same ordinal as pending -- treated as a lateral state
+  // Decision Memory states (DK-601) -- after approval, before execution
+  outcome_pending:           12,
+  outcome_confirmed:         13,
+  execution_started:         14,
+  execution_monitoring:      15,
+  audit_logged:              16,
+  closed:                    17,
 };
 
 /**
  * Resolve the canonical Next.js route for a given workflow state.
- * Mirrors the mapping in docs/architecture/08-page-flow-map.md §2.
+ * Mirrors the mapping in docs/architecture/08-page-flow-map.md S2.
  */
 export function resolveRouteForState(
   state: WorkflowState,
@@ -71,6 +74,11 @@ export function resolveRouteForState(
     case 'second_approval_confirmed':
       return `/execution/${caseId}`;
 
+    // Decision Memory states (DK-601/602/604) -- tracking + outcome confirmation
+    case 'outcome_pending':
+    case 'outcome_confirmed':
+      return `/decision-room/${caseId}`;
+
     case 'execution_started':
     case 'execution_monitoring':
       return `/execution/${caseId}`;
@@ -81,7 +89,7 @@ export function resolveRouteForState(
   }
 }
 
-/** Human-readable label for each workflow state — used in the WorkflowTimeline. */
+/** Human-readable label for each workflow state -- used in the WorkflowTimeline. */
 export const STATE_LABELS: Record<WorkflowState, string> = {
   setup_not_started:         'Setup pending',
   setup_configured:          'Setup complete',
@@ -95,7 +103,10 @@ export const STATE_LABELS: Record<WorkflowState, string> = {
   decision_approved:         'Decision approved',
   second_approval_pending:   'Awaiting supervisor approval',
   second_approval_confirmed: 'Supervisor approved',
-  second_approval_rejected:  'Supervisor rejected — re-evaluate',
+  second_approval_rejected:  'Supervisor rejected -- re-evaluate',
+  // Decision Memory states (DK-601/602/604)
+  outcome_pending:           'Outcome tracking active',
+  outcome_confirmed:         'Outcome confirmed',
   execution_started:         'Execution started',
   execution_monitoring:      'Execution in progress',
   audit_logged:              'Audit recorded',

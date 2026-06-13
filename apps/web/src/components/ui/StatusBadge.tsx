@@ -1,5 +1,5 @@
 /**
- * StatusBadge — colour-coded label for WorkflowState or execution step status.
+ * StatusBadge -- colour-coded label for WorkflowState or execution step status.
  * Pure display component. No interactivity.
  */
 
@@ -34,6 +34,9 @@ const BADGE_MAP: Record<StatusInput, { variant: BadgeVariant; label: string }> =
   second_approval_pending:   { variant: 'warning',  label: 'Awaiting supervisor' },
   second_approval_confirmed: { variant: 'success',  label: 'Supervisor approved' },
   second_approval_rejected:  { variant: 'critical', label: 'Supervisor rejected' },
+  // Decision Memory (DK-601/602/604)
+  outcome_pending:           { variant: 'info',     label: 'Outcome tracking' },
+  outcome_confirmed:         { variant: 'success',  label: 'Outcome confirmed' },
   // Execution
   execution_started:         { variant: 'info',     label: 'Executing' },
   execution_monitoring:      { variant: 'info',     label: 'In progress' },

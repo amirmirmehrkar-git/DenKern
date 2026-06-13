@@ -1,8 +1,12 @@
 {
   "_comment": "Assembled disruption context for CASE-001 — snapshotted at context_confirmed. See docs/architecture/06-data-contracts.md §4",
   "case_id": "CASE-001",
-  "shipment_id": "SHIP-001",
-  "assembled_at": "2026-06-04T09:00:00Z",
+  "company": "Hamburg Precision Components GmbH",
+  "industry": "chemical_manufacturing",
+  "case_owner_email": "lena.ops@example.com",
+  "route_profile": "Shanghai → Rotterdam → Hamburg",
+  "shipment_id": "SHIP-7781",
+  "assembled_at": "2026-06-11T09:00:00Z",
   "prediction": {
     "shipment_id": "SHIP-001",
     "model_version": "eta-delay-v0.1",

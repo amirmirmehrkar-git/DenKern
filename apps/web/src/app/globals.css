@@ -1225,3 +1225,694 @@ body {
 }
 
 .btn-sm { padding: 5px 12px; font-size: var(--text-sm); }
+
+/* ═══════════════════════════════════════════════════════════════
+   Confirm Outcome Page  (Sprint 6B)
+   Standalone token-auth page — no sidebar/topbar dependency.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Page wrapper — centred column, full viewport */
+.confirm-page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px 80px;
+}
+
+/* Card */
+.confirm-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+/* Header */
+.confirm-header {
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.confirm-header--success {
+  background: var(--success-bg);
+  border-bottom-color: #bbf7d0;
+}
+
+.confirm-header__eyebrow {
+  font-size: var(--text-xs, 11px);
+  font-weight: var(--weight-medium, 500);
+  color: var(--text-muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.confirm-header__title {
+  font-size: 22px;
+  font-weight: var(--weight-semibold, 600);
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.confirm-header__sub {
+  font-size: var(--text-sm, 13px);
+  color: var(--text-secondary);
+}
+
+.confirm-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--success);
+  color: white;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+/* Section */
+.confirm-section {
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirm-section:last-child {
+  border-bottom: none;
+}
+
+.confirm-section__label {
+  font-size: var(--text-xs, 11px);
+  font-weight: var(--weight-semibold, 600);
+  color: var(--text-muted);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Summary grid */
+.confirm-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirm-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--text-sm, 13px);
+}
+
+.confirm-summary-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.confirm-summary-value {
+  color: var(--text-primary);
+  font-weight: var(--weight-medium, 500);
+  text-align: right;
+}
+
+.confirm-summary-value--positive {
+  color: var(--success);
+}
+
+.confirm-draft-note {
+  margin-top: 12px;
+  font-size: var(--text-xs, 11px);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Toggle rows */
+.confirm-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.confirm-toggle {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.confirm-toggle-label {
+  font-size: var(--text-sm, 13px);
+  color: var(--text-primary);
+}
+
+/* Fields */
+.confirm-field {
+  margin-top: 10px;
+}
+
+.confirm-field--indent {
+  margin-left: 26px;
+}
+
+.confirm-field__label {
+  display: block;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.confirm-field-hint {
+  font-size: var(--text-sm, 13px);
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.confirm-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.confirm-input--sm {
+  width: 120px;
+}
+
+.confirm-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-light);
+}
+
+/* Decision quality radio grid */
+.confirm-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.confirm-quality-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.confirm-quality-option:hover {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.confirm-quality-option--selected {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.confirm-quality-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.confirm-quality-label {
+  font-size: 10px;
+  font-weight: var(--weight-semibold, 600);
+  letter-spacing: .04em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.confirm-quality-option--selected .confirm-quality-label {
+  color: var(--brand);
+}
+
+/* Quality badge (success view) */
+.confirm-quality-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: var(--text-xs, 11px);
+  font-weight: var(--weight-semibold, 600);
+  letter-spacing: .03em;
+}
+
+.confirm-quality-badge--excellent { background: var(--success-bg); color: var(--success-text); }
+.confirm-quality-badge--good      { background: var(--info-bg);    color: var(--info-text);    }
+.confirm-quality-badge--acceptable { background: var(--warning-bg); color: var(--warning-text); }
+.confirm-quality-badge--poor      { background: var(--critical-bg); color: var(--critical-text); }
+
+/* Textarea */
+.confirm-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.confirm-textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-light);
+}
+
+.confirm-optional {
+  font-weight: normal;
+  color: var(--text-muted);
+  font-size: var(--text-xs, 11px);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Error banner */
+.confirm-error-banner {
+  margin: 0 32px 16px;
+  padding: 10px 14px;
+  background: var(--critical-bg);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--text-sm, 13px);
+  color: var(--critical-text);
+}
+
+/* Actions */
+.confirm-actions {
+  padding: 20px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.confirm-submit-btn {
+  padding: 10px 24px;
+  font-size: var(--text-sm, 13px);
+  font-weight: var(--weight-semibold, 600);
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.confirm-submit-btn:hover:not(:disabled) {
+  background: var(--brand-dark);
+}
+
+.confirm-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirm-submit-note {
+  font-size: var(--text-xs, 11px);
+  color: var(--text-muted);
+}
+
+/* Notes quote (success view) */
+.confirm-notes-quote {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--border);
+  font-size: var(--text-sm, 13px);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Thanks section */
+.confirm-thanks {
+  text-align: center;
+  font-size: var(--text-sm, 13px);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Outcome Timeline Page  (Sprint 7 — DK-707)
+   ========================================================================== */
+
+/* Page wrapper */
+.ot-page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+/* Empty / not-yet-initialized state */
+.ot-empty-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 48px 32px;
+  text-align: center;
+}
+
+.ot-empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.ot-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.ot-empty-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 400px;
+  margin: 0 auto 16px;
+  line-height: 1.5;
+}
+
+.ot-empty-case {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Header summary pill */
+.ot-summary-pill {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.ot-summary-confirmed {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.ot-summary-sep {
+  color: var(--text-muted);
+}
+
+.ot-summary-total {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ot-summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+.ot-summary-unresolved {
+  font-size: 13px;
+  color: var(--critical);
+  margin-left: 8px;
+}
+
+/* No-terminal callout */
+.ot-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--info-bg);
+  border: 1px solid var(--info);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--info-text);
+  margin-top: 20px;
+  line-height: 1.5;
+}
+
+.ot-callout-icon {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+/* Checkpoint list */
+.ot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Checkpoint card */
+.ot-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.ot-card--terminal {
+  opacity: 0.75;
+}
+
+.ot-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.ot-card-task {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.ot-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.ot-due {
+  color: var(--text-muted);
+}
+
+.ot-due--overdue {
+  color: var(--critical);
+  font-weight: 600;
+}
+
+.ot-meta-detail {
+  color: var(--text-muted);
+}
+
+.ot-card-outcome {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--success);
+  background: var(--success-bg);
+  border-radius: 0 4px 4px 0;
+}
+
+.ot-card-outcome-notes {
+  font-size: 13px;
+  color: var(--success-text);
+  font-style: italic;
+}
+
+.ot-card-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--critical);
+  padding: 6px 10px;
+  background: var(--critical-bg);
+  border-radius: 4px;
+}
+
+.ot-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Dimension badges */
+.ot-dim-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ot-dim-badge--operational {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.ot-dim-badge--financial {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.ot-dim-badge--business {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+
+.ot-dim-badge--other {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+/* Confirm modal */
+.ot-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ot-modal {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  width: 100%;
+  max-width: 480px;
+  padding: 28px;
+}
+
+.ot-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ot-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ot-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.ot-modal-close:hover {
+  background: var(--surface-2);
+}
+
+.ot-modal-checkpoint-info {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+
+.ot-modal-task {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.ot-modal-field {
+  margin-bottom: 16px;
+}
+
+.ot-modal-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ot-modal-input,
+.ot-modal-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--surface);
+  box-sizing: border-box;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.ot-modal-input:focus,
+.ot-modal-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.ot-modal-error {
+  padding: 8px 12px;
+  background: var(--critical-bg);
+  color: var(--critical);
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.ot-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}

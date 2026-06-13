@@ -1,0 +1,13 @@
+{
+  "_comment": "Production schedule for CASE-001 — Hamburg Precision Components GmbH. Simulates Excel/MES production plan. Used to determine customer impact and production start dependency.",
+  "case_id": "CASE-001",
+  "affected_line": "Line 2 — Marine Pump Assembly",
+  "planned_production_start": "2026-06-15",
+  "daily_output_units": 40,
+  "customer_commitment_date": "2026-06-24",
+  "customer_name": "Wärtsilä Hamburg",
+  "customer_priority": "high",
+  "production_dependency": "material_required_before_start",
+  "stockout_production_stop_date": "2026-06-14",
+  "_note": "If material does not arrive by 2026-06-14 (stockout date), Line 2 stops. Customer commitment date is 2026-06-24. With 14-day delay, material arrives 2026-07-04 — 10 days after customer commitment. Expediting avoids this entirely."
+}

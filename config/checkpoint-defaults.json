@@ -1,0 +1,105 @@
+{
+  "_comment": "Checkpoint templates by scenario type. Loaded at runtime by the dispatcher (DK-705). No TypeScript changes needed to adjust timing, descriptions, or add new scenario types. See docs/sprints/sprint-7-plan.md §Configuration.",
+  "_schema_version": "1.0",
+  "_revision": "2026-06-12 — initial Sprint 7 templates. Domain Expert interviews may refine timing and task descriptions.",
+
+  "EXPEDITE": {
+    "_comment": "Full air/expedite freight. Three checkpoints: operational arrival confirmation (short window), financial cost reconciliation (medium), business impact on customer commitments (long).",
+    "checkpoints": [
+      {
+        "id_prefix": "op",
+        "dimension": "operational",
+        "task_description": "Confirm whether the expedited shipment arrived on schedule and whether production was able to continue without interruption.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 3
+      },
+      {
+        "id_prefix": "fin",
+        "dimension": "financial",
+        "task_description": "Confirm the actual expedite cost and whether it differed from the estimate shown at decision time. Include any additional handling fees.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 7
+      },
+      {
+        "id_prefix": "biz",
+        "dimension": "business",
+        "task_description": "Confirm whether any customer commitments or delivery promises were affected by the original delay or the expedite decision.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 14
+      }
+    ]
+  },
+
+  "WAIT": {
+    "_comment": "Standard wait — accept the delay. Operational confirmation tight (vessel arrival), business impact broader window.",
+    "checkpoints": [
+      {
+        "id_prefix": "op",
+        "dimension": "operational",
+        "task_description": "Confirm the actual arrival date of the shipment and whether production was interrupted or delayed during the wait period.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 2
+      },
+      {
+        "id_prefix": "biz",
+        "dimension": "business",
+        "task_description": "Confirm whether any customer commitments were at risk or missed as a result of the delayed shipment.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 7
+      }
+    ]
+  },
+
+  "PARTIAL_EXPEDITE": {
+    "_comment": "Partial expedite — expedite critical components only. Operational checkpoint covers partial arrival; financial covers split cost.",
+    "checkpoints": [
+      {
+        "id_prefix": "op",
+        "dimension": "operational",
+        "task_description": "Confirm which components were expedited, when they arrived, and whether the partial delivery was sufficient to prevent a production stoppage.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 3
+      },
+      {
+        "id_prefix": "fin",
+        "dimension": "financial",
+        "task_description": "Confirm the actual cost breakdown between the expedited and standard delivery legs, and compare to the estimate shown at decision time.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 7
+      }
+    ]
+  },
+
+  "REROUTE": {
+    "_comment": "Alternative route. Operational confirmation covers new route delivery; financial covers cost delta vs original routing.",
+    "checkpoints": [
+      {
+        "id_prefix": "op",
+        "dimension": "operational",
+        "task_description": "Confirm the actual arrival date via the alternative route and whether the rerouting prevented or reduced the production disruption.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 5
+      },
+      {
+        "id_prefix": "fin",
+        "dimension": "financial",
+        "task_description": "Confirm the actual cost of the rerouting decision versus the baseline cost estimate. Include any additional customs or port fees.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 10
+      }
+    ]
+  },
+
+  "_fallback": {
+    "_comment": "Used when scenario_chosen has no explicit template. Single operational checkpoint. Edit this to change the default for any unrecognised scenario type.",
+    "checkpoints": [
+      {
+        "id_prefix": "op",
+        "dimension": "operational",
+        "task_description": "Confirm what happened operationally after this decision was implemented. Include actual arrival date and any production impact.",
+        "recipient_role": "case_owner",
+        "due_offset_days": 7
+      }
+    ]
+  }
+}
