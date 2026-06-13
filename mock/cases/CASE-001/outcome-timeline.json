@@ -1,0 +1,66 @@
+{
+  "_comment": "Sprint 7 seed — OutcomeTimeline for CASE-001. Matches what initializeOutcomeTimeline() generates: scenario=EXPEDITE, decided_at=2026-06-11T12:00:00Z. Checkpoint IDs are deterministic: chk-{id_prefix}-{caseId}-{sequence}. Overwritten when outcome_capture_initiated fires in a live dispatch.",
+  "case_id": "CASE-001",
+  "decision_id": "07f600e6-3aac-4649-97f4-115979c21b99",
+  "schema_version": "1.0",
+  "initialized_at": "2026-06-11T12:01:00Z",
+  "checkpoints": [
+    {
+      "id": "chk-op-CASE-001-1",
+      "case_id": "CASE-001",
+      "decision_id": "07f600e6-3aac-4649-97f4-115979c21b99",
+      "dimension": "operational",
+      "task_description": "Confirm whether the expedited shipment arrived on schedule and whether production was able to continue without interruption.",
+      "recipient_id": "lena",
+      "due_at": "2026-06-14T12:00:00.000Z",
+      "status": "pending",
+      "outcome_data": null,
+      "reminder_count": 0,
+      "created_at": "2026-06-11T12:01:00Z",
+      "sent_at": null,
+      "confirmed_at": null,
+      "confirmed_by": null,
+      "last_reminder_at": null
+    },
+    {
+      "id": "chk-fin-CASE-001-2",
+      "case_id": "CASE-001",
+      "decision_id": "07f600e6-3aac-4649-97f4-115979c21b99",
+      "dimension": "financial",
+      "task_description": "Confirm the actual expedite cost and whether it differed from the estimate shown at decision time. Include any additional handling fees.",
+      "recipient_id": "lena",
+      "due_at": "2026-06-18T12:00:00.000Z",
+      "status": "pending",
+      "outcome_data": null,
+      "reminder_count": 0,
+      "created_at": "2026-06-11T12:01:00Z",
+      "sent_at": null,
+      "confirmed_at": null,
+      "confirmed_by": null,
+      "last_reminder_at": null
+    },
+    {
+      "id": "chk-biz-CASE-001-3",
+      "case_id": "CASE-001",
+      "decision_id": "07f600e6-3aac-4649-97f4-115979c21b99",
+      "dimension": "business",
+      "task_description": "Confirm whether any customer commitments or delivery promises were affected by the original delay or the expedite decision.",
+      "recipient_id": "lena",
+      "due_at": "2026-06-25T12:00:00.000Z",
+      "status": "pending",
+      "outcome_data": null,
+      "reminder_count": 0,
+      "created_at": "2026-06-11T12:01:00Z",
+      "sent_at": null,
+      "confirmed_at": null,
+      "confirmed_by": null,
+      "last_reminder_at": null
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "confirmed": 0,
+    "unresolved": 0,
+    "pending": 3
+  }
+}

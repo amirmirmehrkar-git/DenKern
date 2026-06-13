@@ -1,38 +1,45 @@
 {
-  "_comment": "James ML output \u2014 SHIP-001, Hamburg case (Lena 2.0 seed). Immutable from receipt. See docs/architecture/06-data-contracts.md \u00a71",
-  "shipment_id": "SHIP-001",
+  "_comment": "James ML output \u2014 SHIP-7781, Hamburg case (Lena 2.0 seed, updated 2026-06-11 to 14-day delay scenario). Immutable from receipt. See docs/architecture/06-data-contracts.md \u00a71",
+  "_change_note": "Updated 2026-06-11: delay scenario upgraded from 5-day to 14-day to reflect realistic SME disruption magnitude. ETA dates updated accordingly. expected_delay_days is the reference value for DecisionRecord.context_snapshot.predicted_delay_days and for computeActualDelay() in DK-602.",
+  "shipment_id": "SHIP-7781",
   "model_version": "eta-delay-v0.1",
-  "generated_at": "2026-05-25T08:30:00Z",
+  "generated_at": "2026-06-11T08:30:00Z",
   "eta": {
-    "baseline": "2026-05-28",
-    "expected": "2026-06-02",
-    "optimistic": "2026-05-30",
-    "pessimistic": "2026-06-06"
+    "baseline": "2026-06-20",
+    "expected": "2026-07-04",
+    "optimistic": "2026-06-27",
+    "pessimistic": "2026-07-11"
   },
   "delay": {
-    "expected_delay_days": 5,
-    "p_delay_over_3_days": 0.72,
-    "confidence_score": 0.68,
+    "expected_delay_days": 14,
+    "p_delay_over_3_days": 0.95,
+    "confidence_score": 0.78,
     "harbor_congestion_signal": 0.7
   },
   "risk_drivers": [
     {
       "type": "strike_risk",
       "location": "Hamburg",
-      "severity": "medium",
-      "estimated_impact_days": 2
+      "severity": "high",
+      "estimated_impact_days": 3
     },
     {
       "type": "port_congestion",
-      "location": "Amsterdam",
-      "severity": "low",
-      "estimated_impact_days": 1
+      "location": "Rotterdam",
+      "severity": "medium",
+      "estimated_impact_days": 4
     },
     {
       "type": "maritime_disruption",
       "location": "Bay of Biscay",
       "severity": "medium",
       "estimated_impact_days": 2
+    },
+    {
+      "type": "route_diversion",
+      "location": "English Channel",
+      "severity": "medium",
+      "estimated_impact_days": 5
     }
   ]
 }

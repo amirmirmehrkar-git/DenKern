@@ -1,3 +1,12 @@
+---
+type: decision
+status: active
+created: 2026-05-18
+updated: 2026-05-17
+related: []
+tags: []
+project: lena-2.0
+---
 # PRD: DenkKern — Lena 2.0
 ## سیستم پشتیبانی تصمیم‌گیری برای اختلالات حمل‌ونقل
 

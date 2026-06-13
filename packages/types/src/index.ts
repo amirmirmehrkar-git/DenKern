@@ -1,5 +1,5 @@
 /**
- * @denkkern/types — Public API
+ * @denkkern/types -- Public API
  *
  * All shared TypeScript contracts for the DenkKern platform.
  * Import from this package: import type { WorkflowState, ... } from '@denkkern/types'
@@ -18,7 +18,7 @@ export type {
 
 export { WORKFLOW_TRANSITIONS } from './workflow.js';
 
-// Prediction (James → DenkKern boundary)
+// Prediction (James -> DenkKern boundary)
 export type {
   PredictionOutput,
   PredictionOutputMinimal,
@@ -65,8 +65,30 @@ export type {
 
 export { DECISION_NOTE } from './scenario.js';
 
-// Decision approval
+// Decision approval (legacy per-event record)
 export type { DecisionApproval, DecisionContext } from './decision.js';
+
+// Decision Memory -- DecisionRecord + OutcomeRecord + OutcomeDraft (Sprint 6)
+export type {
+  DecisionRecord,
+  OutcomeRecord,
+  OutcomeDraft,
+  ProductionImpact,
+  DecisionQuality,
+  PredictionAccuracyAssessment,
+} from './decision-record.js';
+
+// Outcome Timeline -- parallel to DecisionRecord.outcome (Sprint 7)
+// OutcomeTimeline does NOT replace or modify OutcomeRecord.
+// See docs/strategy/outcome-reality-model-v1.md for the separation rationale.
+export type {
+  OutcomeTimeline,
+  OutcomeCheckpoint,
+  OutcomeTimelineSummary,
+  CheckpointStatus,
+  OutcomeDimension,
+  CheckpointTemplate,
+} from './outcome-timeline.js';
 
 // Execution task
 export type {

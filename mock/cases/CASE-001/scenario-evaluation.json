@@ -1,0 +1,45 @@
+{
+  "_comment": "Scenario engine output for CASE-001 — written at scenario_selected step, read by approval handler to populate DecisionRecord.recommendation_shown. This file is the answer to Sprint 6 Day 1 Investigation 1: recommendation_shown must be persisted between scenario selection and approval. DO NOT delete this file until decision-record.json is written.",
+  "case_id": "CASE-001",
+  "generated_at": "2026-06-11T10:00:00Z",
+  "schema_version": "1.0",
+  "input_summary": {
+    "predicted_delay_days": 14,
+    "inventory_coverage_days": 3,
+    "production_stop_risk_days": 11,
+    "daily_downtime_cost_eur": 150000,
+    "active_signal_count": 3,
+    "highest_signal_severity": "HIGH"
+  },
+  "ranked_scenarios": [
+    {
+      "rank": 1,
+      "scenario": "EXPEDITE",
+      "label": "Expedite shipment from Rotterdam",
+      "estimated_cost_eur": 220000,
+      "risk_level": "medium",
+      "reason": "Higher logistics cost but avoids 11 days of production downtime. Arrives before stockout date of 2026-06-14."
+    },
+    {
+      "rank": 2,
+      "scenario": "REPLACE",
+      "label": "Order from replacement supplier (NordSteel DE backup)",
+      "estimated_cost_eur": 350000,
+      "risk_level": "medium",
+      "reason": "More expensive than expediting but eliminates dependency on delayed shipment entirely."
+    },
+    {
+      "rank": 3,
+      "scenario": "WAIT",
+      "label": "Wait for original shipment",
+      "estimated_cost_eur": 1650000,
+      "risk_level": "high",
+      "reason": "Inventory covers only 3 days while predicted delay is 14 days. Production stops for 11 days at 150,000 EUR/day. Customer commitment missed by 10 days."
+    }
+  ],
+  "top_recommendation": "EXPEDITE",
+  "recommendation_confidence": 0.81,
+  "approval_required": true,
+  "approval_reason": "expedite_cost_exceeds_threshold",
+  "_lifecycle": "Written by: POST /api/cases/:id/select-scenario. Read by: POST /api/cases/:id/approve. Deleted or marked stale after: decision-record.json is written."
+}

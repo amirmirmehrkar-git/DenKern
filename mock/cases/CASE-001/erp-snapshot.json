@@ -1,0 +1,15 @@
+{
+  "_comment": "ERP purchase order snapshot for CASE-001 — Hamburg Precision Components GmbH. Simulates light ERP system (e.g. SAP Business One) output. Read-only reference for decision context.",
+  "case_id": "CASE-001",
+  "purchase_order_id": "PO-44921",
+  "material_id": "MAT-BOLT-MG-884",
+  "material_name": "Marine-grade valve bolts",
+  "supplier_name": "NordSteel Components",
+  "ordered_quantity": 1200,
+  "unit_cost_eur": 18.50,
+  "total_po_value_eur": 22200,
+  "supplier_status": "confirmed",
+  "payment_status": "pending_delivery",
+  "shipment_id": "SHIP-7781",
+  "erp_last_updated": "2026-06-11T09:30:00Z"
+}

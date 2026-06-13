@@ -16,6 +16,7 @@ This folder is a cross-tool Markdown knowledge base for DenkKern.
 Before editing, read:
 
 - [README.md](README.md)
+- [98-governance-guardrails.md](98-governance-guardrails.md) ← load first: team structure, AI personas, authority rules
 - [11-knowledge-management-rules.md](11-knowledge-management-rules.md)
 - [00-index.md](00-index.md)
 - [12-icp-and-gtm.md](12-icp-and-gtm.md)

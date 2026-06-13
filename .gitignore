@@ -29,18 +29,18 @@ build/
 # Editor
 .vscode/settings.json.bak
 
-# Sprint 7 additions
-apps/web/next-env.d.ts
-scripts/_tmp-*.mjs
+# Cursor IDE — local rules, not shared project config
 .cursor/
-prediction/artifacts/
+
+# Next.js auto-generated — must not be committed (re-created by next dev/build)
+apps/web/next-env.d.ts
+
+# Temp / scratch scripts — naming convention: _tmp-*.mjs
+scripts/_tmp-*.mjs
 
 # Lockfiles — only the root package-lock.json is canonical.
 # Do not commit nested lockfiles created by running npm install inside packages/.
 packages/*/package-lock.json
-
-apps/*/package-lock.json
-
 apps/*/package-lock.json
 
 # ML model artifacts — never commit binary model files
@@ -51,4 +51,3 @@ apps/*/package-lock.json
 prediction/artifacts/
 contracts/prediction/artifacts/
 packages/prediction-adapter/models/
-

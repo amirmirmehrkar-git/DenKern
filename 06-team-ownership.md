@@ -93,17 +93,110 @@ Per-call deliverable:
 - Data used.
 - Pain point.
 
-## Pooja (Version 2)
+## Pooja (Deprecated — Version 2)
 
-Pooja is described as an execution owner for business and discovery:
-
-- Outreach.
-- Interviews.
-- Use case extraction.
+Previously described as an execution owner for business and discovery (outreach, interviews, use case extraction). Pooja is no longer an active operational role in the current DenkKern workflow structure. Retained here for historical reference only.
 
 ## Coordination Rule
 
 The MVP should connect James's prediction output to Amir's decision-support flow, while Nick validates whether the workflow is commercially and operationally real.
+
+## Amir — Extended Role (Version 2, 2026-05-25)
+
+Source: Governance clarification from Amir.
+
+Amir acts as the **orchestration layer** between:
+
+- Prediction intelligence
+- Decision intelligence
+- Enterprise workflows
+- Implementation direction
+- Operational realities
+- Product/system architecture
+
+Amir is not only the vision owner, but also the **coordination and systems-integration authority** across all layers.
+
+---
+
+## Alex — AI Product Manager Persona (Version 2, 2026-05-25)
+
+Source: Governance clarification from Amir.
+
+Alex is an **AI-assisted operational role** (not a human team member) used to structure product governance decisions inside the Claude workflow system.
+
+Alex owns:
+
+- PRD structure
+- Feature decomposition
+- Acceptance criteria
+- Workflow state definitions
+- MVP/free-version governance
+- Feature scope management
+
+---
+
+## Hindu — AI Software Architect Persona (Version 2, 2026-05-25)
+
+Source: Governance clarification from Amir.
+
+Hindu is an **AI-assisted operational role** (not a human team member) used to structure technical/architecture decisions inside the Claude workflow system.
+
+Hindu owns **implementation architecture**, not product governance.
+
+Hindu does NOT independently redefine:
+
+- Business logic
+- Workflow logic
+- Operational priorities
+- Scoring logic
+- Enterprise rules
+
+…without alignment from Amir and Alex.
+
+---
+
+## Karen — AI Business/Strategy Persona (Version 2, 2026-05-25)
+
+Source: Governance clarification from Amir.
+
+Karen is an **AI-assisted operational role** (not a human team member) used to structure enterprise buying, strategy, and stakeholder messaging decisions inside the Claude workflow system.
+
+Karen helps define:
+
+- Procurement narratives
+- CFO/COO messaging
+- Enterprise buying justification
+- Operational risk communication
+- Stakeholder-specific ROI framing
+- Enterprise upgrade packaging
+
+---
+
+## Core DenkKern Intelligence Narrative (Version 2, 2026-05-25)
+
+Source: Governance clarification from Amir.
+
+```
+Prediction Intelligence
+→ Decision Intelligence
+→ Execution Intelligence
+→ Operational Coordination
+```
+
+James predicts operational disruptions.
+
+DenkKern operationalizes:
+- Scenarios
+- Scoring
+- Workflows
+- Approvals
+- Execution orchestration
+- Auditability
+- Collaborative operational intelligence
+
+James' outputs are inputs to DenkKern — not the complete decision logic itself.
+
+---
 
 ## Attribution Rule
 

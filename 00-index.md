@@ -114,6 +114,8 @@ This folder contains topic-based Markdown summaries for the current DenkKern MVP
 - [96-reply-to-james-rotterdam-switch.md](96-reply-to-james-rotterdam-switch.md) - Copy/paste reply to James: switching Amsterdam -> Rotterdam.
 - [97-sources-image-to-sheet.md](97-sources-image-to-sheet.md) - Plan to convert a sources screenshot/image into Excel/Google Sheet (pending image).
 
+- [98-governance-guardrails.md](98-governance-guardrails.md) - **GUARDRAILS** — Team structure, AI personas (Alex/Hindu/Karen), authority map, MVP constraints, and working context. Load at session start.
+
 ## Current Strategic Rule
 
 Do not build Palantir. Do not build a generic platform. Do not overbuild.

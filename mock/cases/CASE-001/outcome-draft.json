@@ -1,0 +1,19 @@
+{
+  "case_id": "CASE-001",
+  "decision_id": "07f600e6-3aac-4649-97f4-115979c21b99",
+  "is_auto_generated": true,
+  "generated_at": "2026-06-12T07:31:11.442Z",
+  "predicted_arrival_date": "2026-07-04",
+  "actual_arrival_date": "2026-07-01",
+  "prediction_error_days": -3,
+  "actual_delay_days": 11,
+  "selected_scenario_id": "EXPEDITE",
+  "recommended_scenario_id": "EXPEDITE",
+  "followed_recommendation": true,
+  "wait_cost_eur": 1650000,
+  "actual_cost_eur": 220000,
+  "estimated_cost_avoided_eur": 1430000,
+  "production_impact_detected": null,
+  "draft_summary": "Vessel arrived 2026-07-01 -- 11d after baseline (2026-06-20), 3d earlier than predicted ETA (2026-07-04). EXPEDITE executed (matched recommendation). Cost: EUR 220,000 vs EUR 1,650,000 (WAIT). Estimated saving: EUR 1,430,000. Production impact unknown.",
+  "requires_human_confirmation": true
+}

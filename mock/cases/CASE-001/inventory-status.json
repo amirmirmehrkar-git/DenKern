@@ -1,0 +1,13 @@
+{
+  "_comment": "Internal inventory snapshot for CASE-001 — Hamburg Precision Components GmbH. Simulates ERP/warehouse module output. Used by Context Engine for stockout risk calculation.",
+  "case_id": "CASE-001",
+  "material_id": "MAT-BOLT-MG-884",
+  "material_name": "Marine-grade valve bolts",
+  "current_stock_units": 360,
+  "daily_consumption_units": 120,
+  "inventory_coverage_days": 3,
+  "safety_stock_days": 5,
+  "stockout_date": "2026-06-14",
+  "snapshot_date": "2026-06-11T09:00:00Z",
+  "_note": "inventory_coverage_days = current_stock_units / daily_consumption_units = 360 / 120 = 3 days. With predicted_delay_days = 14, production stops on day 3 and resumes only on vessel arrival. Risk window = 11 days."
+}
