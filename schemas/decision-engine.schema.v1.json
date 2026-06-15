@@ -1,0 +1,959 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://denkkern.io/schemas/decision-engine.v1.json",
+  "title": "DenkKern Decision Engine Contract v1",
+  "description": "Canonical production-grade contract for the DenkKern V1 decision engine. This schema is the single source of truth for all UI screens, API routes, and decision logic. No screen, route, or rule may hardcode a value that this schema defines. See docs/architecture/decision-engine-contract-v1.md for the rationale.",
+  "type": "object",
+  "required": [
+    "meta",
+    "state_machine",
+    "industry_templates",
+    "lena_configuration",
+    "shipment_context",
+    "disruption_context",
+    "prediction_signals",
+    "business_context",
+    "decision_constraints",
+    "organization_rules",
+    "scenarios",
+    "actions",
+    "engine_output",
+    "graph_structures",
+    "ui_binding"
+  ],
+  "additionalProperties": true,
+
+  "$defs": {
+
+    "ISODateTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime string, e.g. 2026-06-15T07:00:00Z"
+    },
+
+    "ISODate": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date string, e.g. 2026-06-15"
+    },
+
+    "Probability": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Probability value between 0 and 1 inclusive"
+    },
+
+    "Confidence": {
+      "$ref": "#/$defs/Probability",
+      "description": "Model confidence score between 0 and 1"
+    },
+
+    "EuroAmount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Monetary amount in Euros (EUR)"
+    },
+
+    "AlertSeverity": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "Severity level of an alert or risk signal"
+    },
+
+    "ShipmentState": {
+      "type": "string",
+      "enum": [
+        "monitoring_active",
+        "disruption_detected",
+        "alert_generated",
+        "disruption_context_opened",
+        "scenarios_generated",
+        "recommendation_ranked",
+        "decision_pending",
+        "decision_approved",
+        "second_approval_pending",
+        "second_approval_confirmed",
+        "execution_validation_pending",
+        "execution_started",
+        "execution_monitoring",
+        "needs_re_evaluation",
+        "outcome_pending",
+        "outcome_confirmed",
+        "audit_logged",
+        "closed"
+      ],
+      "description": "Legal lifecycle state for a disruption case. Defined in docs/architecture/02-workflow-state-machine.md"
+    },
+
+    "SignalImpactLevel": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "informational"],
+      "description": "Impact level of an external or internal signal on the decision"
+    },
+
+    "ExternalSignal": {
+      "type": "object",
+      "required": ["signal_id", "signal_type", "severity", "source", "confidence"],
+      "properties": {
+        "signal_id":               { "type": "string" },
+        "signal_type":             { "type": "string", "description": "e.g. port_congestion, weather_advisory, ais_deviation, geopolitical_risk, news_event" },
+        "location":                { "type": "string" },
+        "route":                   { "type": "string" },
+        "severity":                { "$ref": "#/$defs/AlertSeverity" },
+        "description":             { "type": "string" },
+        "source":                  { "type": "string", "description": "Data source: PortWatch, DWD, AIS, etc." },
+        "confidence":              { "$ref": "#/$defs/Confidence" },
+        "impact_level":            { "$ref": "#/$defs/SignalImpactLevel" },
+        "contribution_to_decision": { "type": "string", "description": "How this signal influenced the recommendation" },
+        "detected_at":             { "$ref": "#/$defs/ISODateTime" }
+      },
+      "additionalProperties": true
+    },
+
+    "InternalSignal": {
+      "type": "object",
+      "required": ["signal_id", "signal_type", "source", "confidence"],
+      "properties": {
+        "signal_id":               { "type": "string" },
+        "signal_type":             { "type": "string", "description": "e.g. inventory_status, production_schedule, erp_purchase_order, supplier_lead_time" },
+        "source":                  { "type": "string", "description": "ERP, inventory module, production planner, etc." },
+        "value":                   { "description": "Signal value — type depends on signal_type" },
+        "confidence":              { "$ref": "#/$defs/Confidence" },
+        "impact_level":            { "$ref": "#/$defs/SignalImpactLevel" },
+        "contribution_to_decision": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "Scenario": {
+      "type": "object",
+      "description": "SCENARIO = what may happen to the shipment. A probabilistic future state. NOT the same as an action (what we can do) or a recommendation (what DenkKern suggests).",
+      "required": ["scenario_id", "label", "probability", "financial_exposure_eur", "risk_level"],
+      "properties": {
+        "scenario_id":             { "type": "string", "pattern": "^SCN-" },
+        "label":                   { "type": "string" },
+        "description":             { "type": "string" },
+        "probability":             { "$ref": "#/$defs/Probability" },
+        "eta":                     { "$ref": "#/$defs/ISODate" },
+        "timeline_impact_hours":   { "type": "number" },
+        "delay_days":              { "type": "number" },
+        "buffer_impact":           { "type": "string", "description": "Effect on inventory/production buffer" },
+        "production_impact":       { "type": "string" },
+        "production_stop_days":    { "type": "number" },
+        "customer_impact":         { "type": "string" },
+        "financial_exposure_eur":  { "$ref": "#/$defs/EuroAmount" },
+        "risk_level":              { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "explanation":             { "type": "string" }
+      },
+      "additionalProperties": true,
+      "not": {
+        "required": ["action_id"],
+        "description": "A scenario must never contain action_id — scenarios and actions are separate concepts"
+      }
+    },
+
+    "Action": {
+      "type": "object",
+      "description": "ACTION = what we can do to mitigate. A decision option with cost, timing, and constraints. NOT the same as a scenario (what may happen) or a recommendation (what DenkKern suggests).",
+      "required": ["action_id", "label", "type", "cost_eur", "meets_spec", "requires_approval"],
+      "properties": {
+        "action_id":               { "type": "string", "pattern": "^ACT-" },
+        "label":                   { "type": "string" },
+        "description":             { "type": "string" },
+        "type":                    { "type": "string", "enum": ["emergency_procurement", "partial_substitution", "reroute", "alternative_supplier", "air_freight", "road_freight", "no_action", "expedite", "wait"] },
+        "supplier":                { "type": "string" },
+        "material_spec":           { "type": "string" },
+        "cost_eur":                { "$ref": "#/$defs/EuroAmount" },
+        "cost_breakdown":          { "type": "object", "additionalProperties": true },
+        "estimated_arrival":       { "$ref": "#/$defs/ISODate" },
+        "arrival_days_from_now":   { "type": "number" },
+        "expected_delay_reduction_hours": { "type": "number" },
+        "delivery_confidence":     { "$ref": "#/$defs/Confidence" },
+        "risk_level":              { "type": "string", "enum": ["critical", "high", "medium", "low", "minimal"] },
+        "meets_spec":              { "type": "boolean", "description": "Whether this action delivers the required material specification" },
+        "meets_spec_notes":        { "type": "string" },
+        "requires_approval":       { "type": "boolean", "description": "True if action cost exceeds the approval threshold defined in lena_configuration" },
+        "approval_reason":         { "type": ["string", "null"] },
+        "eligibility":             { "type": "string", "description": "Why this action is or is not eligible" },
+        "constraints":             { "type": "array", "items": { "type": "string" } },
+        "supplier_requirements":   { "type": "array", "items": { "type": "string" } },
+        "execution_requirements":  { "type": "array", "items": { "type": "string" } },
+        "risk_notes":              { "type": "string" },
+        "booking_deadline":        { "$ref": "#/$defs/ISODateTime" },
+        "feasibility":             { "type": "string" }
+      },
+      "additionalProperties": true,
+      "not": {
+        "required": ["scenario_id"],
+        "description": "An action must never contain scenario_id — scenarios and actions are separate concepts"
+      }
+    },
+
+    "DimensionScore": {
+      "type": "object",
+      "required": ["raw", "weight", "weighted", "rationale"],
+      "properties": {
+        "raw":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "weight":    { "type": "number", "minimum": 0, "maximum": 1 },
+        "weighted":  { "type": "number", "minimum": 0, "maximum": 1 },
+        "rationale": { "type": "string", "description": "Human-readable explanation of this dimension score. Must not be empty." }
+      }
+    },
+
+    "ScoreBreakdown": {
+      "type": "object",
+      "required": ["action_id", "rank", "composite_score", "eligible", "disqualified", "dimension_scores"],
+      "properties": {
+        "action_id":             { "type": "string" },
+        "rank":                  { "type": "integer", "minimum": 1 },
+        "composite_score":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "eligible":              { "type": "boolean" },
+        "disqualified":          { "type": "boolean" },
+        "disqualification_reason": { "type": ["string", "null"] },
+        "dimension_scores": {
+          "type": "object",
+          "description": "Score per evaluation dimension. Keys must match lena_configuration.evaluation_weights keys.",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/DimensionScore" }
+        },
+        "rules_applied": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "rule_id values of rules that affected this action's score or eligibility"
+        }
+      }
+    },
+
+    "Rule": {
+      "type": "object",
+      "description": "Organization rule — a hard constraint or weight override that cannot be overridden by AI. Rules are evaluated before scoring and may disqualify actions or modify evaluation weights.",
+      "required": ["rule_id", "label", "condition", "active"],
+      "properties": {
+        "rule_id":              { "type": "string", "pattern": "^ORG-R-" },
+        "label":                { "type": "string" },
+        "description":          { "type": "string" },
+        "condition":            { "type": "string", "description": "Machine-readable guard condition expression. Must not be empty narrative text." },
+        "active":               { "type": "boolean" },
+        "severity":             { "type": "string", "enum": ["blocking", "advisory", "informational"] },
+        "disqualifies":         { "type": "array", "items": { "type": "string" }, "description": "action_id values disqualified by this rule" },
+        "weight_override":      { "type": "object", "additionalProperties": { "type": "number" }, "description": "Evaluation weight overrides applied when rule is triggered" },
+        "effect_on_recommendation": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "FiredRule": {
+      "type": "object",
+      "description": "A rule instance that was evaluated during the current decision run.",
+      "required": ["rule_id", "label", "triggered"],
+      "properties": {
+        "rule_id":       { "type": "string" },
+        "label":         { "type": "string" },
+        "triggered":     { "type": "boolean" },
+        "trigger_values": {
+          "type": "object",
+          "description": "The actual runtime values that caused the rule to fire. Must be structured — not a text description.",
+          "additionalProperties": true
+        },
+        "effect":        { "type": "string", "description": "What the rule did when triggered. Required when triggered == true." },
+        "applied_to_actions": { "type": "array", "items": { "type": "string" } },
+        "disqualifies":  { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "ExplanationStep": {
+      "type": "object",
+      "required": ["step", "agent", "output"],
+      "properties": {
+        "step":   { "type": "integer", "minimum": 1 },
+        "agent":  { "type": "string", "description": "Which sub-agent produced this trace step, e.g. signal_collector, rule_engine, scoring_engine" },
+        "output": { "type": "string", "description": "Human-readable output of this trace step. Should be a factual statement, not a narrative." }
+      }
+    },
+
+    "Recommendation": {
+      "type": "object",
+      "description": "RECOMMENDATION = what DenkKern suggests. Derived from scoring all actions across all scenarios. Separate from scenarios (what may happen) and actions (what we can do).",
+      "required": ["action_id", "confidence", "composite_score", "rank", "requires_approval"],
+      "properties": {
+        "action_id":               { "type": "string", "description": "Points to the action_id in actions[] — not a scenario_id" },
+        "label":                   { "type": "string" },
+        "confidence":              { "$ref": "#/$defs/Confidence" },
+        "composite_score":         { "type": "number", "minimum": 0, "maximum": 1 },
+        "rank":                    { "type": "integer", "minimum": 1 },
+        "financial_impact_summary": {
+          "type": "object",
+          "properties": {
+            "action_cost_eur":           { "$ref": "#/$defs/EuroAmount" },
+            "downtime_averted_eur":      { "$ref": "#/$defs/EuroAmount" },
+            "penalty_averted_eur":       { "$ref": "#/$defs/EuroAmount" },
+            "net_saving_vs_wait_eur":    { "type": "number" },
+            "expected_savings_vs_waiting_eur": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "requires_approval":       { "type": "boolean" },
+        "approval_required_reason": { "type": "string" },
+        "why_recommended":         { "type": "string" },
+        "alternatives_considered": { "type": "array", "items": { "type": "string" } },
+        "rejected_actions_with_reason": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action_id", "reason"],
+            "properties": {
+              "action_id": { "type": "string" },
+              "reason":    { "type": "string" }
+            }
+          }
+        },
+        "expected_downtime_reduction_hours": { "type": "number" },
+        "recommended_at": { "$ref": "#/$defs/ISODateTime" }
+      },
+      "not": {
+        "required": ["scenario_id"],
+        "description": "A recommendation must point to an action_id, never a scenario_id"
+      }
+    },
+
+    "ApprovalRouting": {
+      "type": "object",
+      "description": "Approval routing derived from ORG-R: cost vs threshold evaluation. approval_required must be computed, not hardcoded.",
+      "required": ["approval_required", "cost_eur", "threshold_eur"],
+      "properties": {
+        "approval_required":       { "type": "boolean" },
+        "approval_required_reason": { "type": "string" },
+        "cost_eur":                { "$ref": "#/$defs/EuroAmount" },
+        "threshold_eur":           { "$ref": "#/$defs/EuroAmount" },
+        "delta_eur":               { "type": "number" },
+        "approval_level":          { "type": "integer", "minimum": 1 },
+        "approver": {
+          "type": "object",
+          "properties": {
+            "person_id":          { "type": "string" },
+            "name":               { "type": "string" },
+            "role":               { "type": "string" },
+            "contact":            { "type": "string" },
+            "response_deadline":  { "$ref": "#/$defs/ISODateTime" },
+            "response_deadline_reason": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "escalation_path": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["level", "role"],
+            "properties": {
+              "level":      { "type": "integer" },
+              "role":       { "type": "string" },
+              "name":       { "type": "string" },
+              "above_eur":  { "$ref": "#/$defs/EuroAmount" }
+            }
+          }
+        },
+        "approval_status": { "type": "string", "enum": ["pending", "approved", "rejected", "escalated", "not_required"] },
+        "approved_at":     { "type": ["string", "null"] },
+        "approved_by":     { "type": ["string", "null"] },
+        "override_possible": { "type": "boolean" }
+      }
+    },
+
+    "ExecutionChecklistItem": {
+      "type": "object",
+      "required": ["item_id", "label", "owner", "status", "blocking"],
+      "properties": {
+        "item_id":           { "type": "string", "pattern": "^EXV-" },
+        "label":             { "type": "string" },
+        "description":       { "type": "string" },
+        "owner":             { "type": "string" },
+        "deadline":          { "$ref": "#/$defs/ISODateTime" },
+        "due_at":            { "$ref": "#/$defs/ISODateTime" },
+        "status":            { "type": "string", "enum": ["pending", "in_progress", "confirmed", "failed", "waived"] },
+        "blocking":          { "type": "boolean", "description": "If true, execution cannot proceed until this item is confirmed" },
+        "evidence_required": { "type": "boolean" },
+        "evidence_url":      { "type": ["string", "null"] }
+      }
+    },
+
+    "ExecutionValidation": {
+      "type": "object",
+      "required": ["action_id", "checklist", "blocking_items", "execution_can_proceed"],
+      "properties": {
+        "action_id":          { "type": "string" },
+        "checklist":          { "type": "array", "items": { "$ref": "#/$defs/ExecutionChecklistItem" }, "minItems": 1 },
+        "blocking_items":     { "type": "array", "items": { "type": "string" }, "description": "item_id values that are blocking" },
+        "non_blocking_items": { "type": "array", "items": { "type": "string" } },
+        "execution_can_proceed": { "type": "boolean" },
+        "execution_cannot_proceed_reason": { "type": "string" }
+      }
+    },
+
+    "ProjectedOutcome": {
+      "type": "object",
+      "required": ["action_id", "production_stop_averted", "cost_action_eur"],
+      "properties": {
+        "action_id":                  { "type": "string" },
+        "scenario_basis":             { "type": "string" },
+        "production_stop_averted":    { "type": "boolean" },
+        "production_resumes":         { "$ref": "#/$defs/ISODate" },
+        "days_saved":                 { "type": "number" },
+        "cost_action_eur":            { "$ref": "#/$defs/EuroAmount" },
+        "cost_downtime_averted_eur":  { "$ref": "#/$defs/EuroAmount" },
+        "cost_penalty_averted_eur":   { "$ref": "#/$defs/EuroAmount" },
+        "net_benefit_eur":            { "type": "number" },
+        "exposure_avoided_eur":       { "type": "number" },
+        "customer_commitment_met":    { "type": "boolean" },
+        "delivery_deadline_preserved": { "$ref": "#/$defs/ISODate" },
+        "original_shipment_status":   { "type": "string" }
+      }
+    },
+
+    "ActualOutcome": {
+      "type": "object",
+      "required": ["execution_status", "outcome_label"],
+      "properties": {
+        "recorded_at":              { "$ref": "#/$defs/ISODateTime" },
+        "action_executed":          { "type": "string" },
+        "execution_status":         { "type": "string", "enum": ["completed", "failed", "partial", "cancelled"] },
+        "actual_delivery_date":     { "$ref": "#/$defs/ISODateTime" },
+        "delivery_on_time":         { "type": "boolean" },
+        "production_stopped":       { "type": "boolean" },
+        "actual_downtime_days":     { "type": "number" },
+        "actual_cost_eur":          { "$ref": "#/$defs/EuroAmount" },
+        "cost_vs_projection_eur":   { "type": "number" },
+        "cost_variance_reason":     { "type": "string" },
+        "customer_commitment_met":  { "type": "boolean" },
+        "approval_obtained":        { "type": "boolean" },
+        "approval_obtained_at":     { "type": ["string", "null"] },
+        "approved_by":              { "type": ["string", "null"] },
+        "execution_checklist_completed": { "type": "boolean" },
+        "outcome_confirmed_by":     { "type": "string" },
+        "prediction_accuracy":      { "type": "number", "description": "How accurate was the model's prediction, 0-1" },
+        "variance":                 { "type": "string", "description": "Summary of what deviated from projection" },
+        "lessons_learned":          { "type": "string" },
+        "status":                   { "type": "string", "enum": ["confirmed", "pending", "disputed"] },
+        "outcome_label":            { "type": "string", "description": "Human-readable outcome summary. E.g. SUCCESS — Production continuity preserved." }
+      }
+    },
+
+    "GraphNode": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id":    { "type": "string" },
+        "label": { "type": "string" },
+        "type":  { "type": "string" },
+        "state": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "GraphEdge": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from":              { "type": "string" },
+        "to":                { "type": "string" },
+        "type":              { "type": "string" },
+        "label":             { "type": "string" },
+        "relationship_type": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+
+    "Graph": {
+      "type": "object",
+      "required": ["nodes", "edges", "description"],
+      "properties": {
+        "description": { "type": "string" },
+        "nodes":       { "type": "array", "items": { "$ref": "#/$defs/GraphNode" }, "minItems": 1 },
+        "edges":       { "type": "array", "items": { "$ref": "#/$defs/GraphEdge" } }
+      },
+      "additionalProperties": true
+    },
+
+    "Transition": {
+      "type": "object",
+      "required": ["id", "from", "to", "trigger"],
+      "properties": {
+        "id":                   { "type": "string", "pattern": "^T-" },
+        "from":                 { "$ref": "#/$defs/ShipmentState" },
+        "to":                   { "$ref": "#/$defs/ShipmentState" },
+        "trigger":              { "type": "string", "description": "Machine-readable event name that causes this transition" },
+        "trigger_label":        { "type": "string" },
+        "allowed_roles":        { "type": "array", "items": { "type": "string" }, "description": "Roles permitted to trigger this transition. 'system' means automatic." },
+        "required_conditions":  { "type": "array", "items": { "type": "string" }, "description": "Guard conditions that must be true for this transition to be allowed" },
+        "effect_on_data":       { "type": "string", "description": "What data is written/changed by this transition" },
+        "reversible":           { "type": "boolean", "default": false },
+        "reverse_transition_id": { "type": "string", "description": "If reversible, the transition ID for the reverse path" }
+      }
+    },
+
+    "IndustryTemplate": {
+      "type": "object",
+      "required": ["template_id", "label", "evaluation_weights", "approval_threshold_eur"],
+      "properties": {
+        "template_id":             { "type": "string" },
+        "label":                   { "type": "string" },
+        "description":             { "type": "string" },
+        "evaluation_weights": {
+          "type": "object",
+          "description": "Weights must sum to 1.0",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "approval_threshold_eur":  { "$ref": "#/$defs/EuroAmount" },
+        "default_lena_role":       { "type": "string" },
+        "suggested_lena_objective": { "type": ["string", "null"] },
+        "suggested_lena_reports_to": { "type": ["string", "null"] },
+        "default_departments":     { "type": "array", "items": { "type": "string" } },
+        "default_decision_priorities": { "type": "array", "items": { "type": "string" } },
+        "suggested_approval_chain": { "type": "array", "items": { "type": "string" } },
+        "default_trigger_conditions": { "type": "array", "items": { "type": "string" } },
+        "default_success_criteria": { "type": "array", "items": { "type": "string" } },
+        "suggested_success_criteria": { "type": "array", "items": { "type": "string" } },
+        "typical_materials":       { "type": "array", "items": { "type": "string" } },
+        "typical_erp_assumptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "UIScreenBinding": {
+      "type": "object",
+      "required": ["screen_id", "title", "primary_data_source", "schema_paths", "no_hardcoded_values"],
+      "description": "Maps a UI screen to the schema paths that power it. No screen may use values not listed in its schema_paths.",
+      "properties": {
+        "screen_id":           { "type": "string", "description": "Canonical screen number, e.g. '2' for Mission Control" },
+        "title":               { "type": "string" },
+        "ux_ia_ref":           { "type": "string", "description": "Reference to the UX IA document section" },
+        "primary_data_source": { "type": "string", "description": "Root schema path that the screen primarily reads from" },
+        "schema_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "All schema paths this screen reads. Dot-notation, e.g. engine_output.recommendation"
+        },
+        "api_endpoint":        { "type": "string", "description": "The /api/demo/ endpoint that serves this screen" },
+        "no_hardcoded_values": { "type": "boolean", "const": true }
+      }
+    }
+  },
+
+  "properties": {
+
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "contract", "case_id"],
+      "properties": {
+        "schema_version":  { "type": "string", "description": "Schema version, e.g. 2.0" },
+        "contract":        { "type": "string", "const": "decision-engine-output" },
+        "case_id":         { "type": "string" },
+        "generated_at":    { "$ref": "#/$defs/ISODateTime" },
+        "engine_version":  { "type": "string" },
+        "demo_mode":       { "type": "boolean" },
+        "screens_powered": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "state_machine": {
+      "type": "object",
+      "required": ["states", "transitions"],
+      "description": "Formal lifecycle definition for a disruption case. Authoritative definition: docs/architecture/02-workflow-state-machine.md",
+      "properties": {
+        "current_state": { "$ref": "#/$defs/ShipmentState" },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "label"],
+            "properties": {
+              "id":            { "$ref": "#/$defs/ShipmentState" },
+              "label":         { "type": "string" },
+              "description":   { "type": "string" },
+              "type":          { "type": "string", "enum": ["initial", "active", "human_gate", "system", "terminal"] },
+              "ui_screen_id":  { "type": "string", "description": "Which screen this state maps to" },
+              "entry_condition": { "type": "string" },
+              "exit_condition":  { "type": "string" },
+              "allowed_transitions": { "type": "array", "items": { "type": "string" }, "description": "IDs of valid outgoing transitions" }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/Transition" }
+        },
+        "human_gates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ShipmentState" },
+          "description": "States that require explicit human action to exit. System cannot auto-advance past these."
+        },
+        "terminal_states": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ShipmentState" },
+          "description": "States with no outgoing transitions"
+        },
+        "irreversible_after": {
+          "$ref": "#/$defs/ShipmentState",
+          "description": "Once this state is entered, the case cannot return to earlier states"
+        }
+      }
+    },
+
+    "industry_templates": {
+      "type": "array",
+      "description": "Pre-configured industry starting points. Users review and adjust — never configure from scratch. V1 requires exactly 4 templates.",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/IndustryTemplate" }
+    },
+
+    "lena_configuration": {
+      "type": "object",
+      "required": ["template_id", "primary_objective", "evaluation_weights", "approval_threshold_eur"],
+      "description": "Active Lena configuration. Derived from industry template and reviewed during Smart Setup (Phase 0). Primary objective controls all Phase 1 recommendations.",
+      "properties": {
+        "template_id":           { "type": "string" },
+        "primary_objective":     { "type": "string" },
+        "reports_to":            { "type": "string" },
+        "responsibilities":      { "type": "array", "items": { "type": "string" } },
+        "evaluation_weights": {
+          "type": "object",
+          "description": "Active evaluation dimension weights. May differ from template default if operator adjusted during Smart Setup.",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "approval_threshold_eur": { "$ref": "#/$defs/EuroAmount" },
+        "trigger_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["condition", "label"],
+            "properties": {
+              "condition": { "type": "string" },
+              "label":     { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "organization": {
+      "type": "object",
+      "required": ["company", "industry"],
+      "properties": {
+        "company":   { "type": "string" },
+        "industry":  { "type": "string" },
+        "headquarters": { "type": "string" },
+        "sites":     { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "structure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["person_id", "name", "role"],
+            "properties": {
+              "person_id":       { "type": "string" },
+              "name":            { "type": "string" },
+              "role":            { "type": "string" },
+              "influence_level": { "type": "string" },
+              "in_approval_chain": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+
+    "shipment_context": {
+      "type": "object",
+      "required": ["shipment_id", "shipment_name", "material", "production_context"],
+      "properties": {
+        "shipment_id":       { "type": "string" },
+        "shipment_name":     { "type": "string" },
+        "material": {
+          "type": "object",
+          "required": ["name", "criticality", "critical_material_flag"],
+          "properties": {
+            "name":                  { "type": "string" },
+            "specification":         { "type": "string" },
+            "quantity":              { "type": "string" },
+            "criticality":           { "type": "string", "enum": ["critical", "important", "standard"] },
+            "critical_material_flag": { "type": "boolean" },
+            "substitution_possible": { "type": "boolean" },
+            "substitution_notes":    { "type": "string" }
+          }
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "supplier":     { "type": "string" },
+            "location":     { "type": "string" },
+            "supplier_id":  { "type": "string" }
+          }
+        },
+        "vessel": {
+          "type": "object",
+          "properties": {
+            "name":             { "type": "string" },
+            "imo":              { "type": "string" },
+            "current_location": { "type": "string" },
+            "status":           { "type": "string" }
+          }
+        },
+        "route": { "type": "object", "additionalProperties": true },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "original_eta":         { "$ref": "#/$defs/ISODate" },
+            "revised_eta":          { "$ref": "#/$defs/ISODate" },
+            "delay_days_expected":  { "type": "number" },
+            "delay_cause_primary":  { "type": "string" },
+            "delay_cause_secondary": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "production_context": {
+          "type": "object",
+          "required": ["required_by", "daily_downtime_cost_eur"],
+          "properties": {
+            "project":                     { "type": "string" },
+            "production_line":             { "type": "string" },
+            "required_by":                 { "$ref": "#/$defs/ISODate" },
+            "days_until_required":         { "type": "number" },
+            "days_until_production_stop":  { "type": "number" },
+            "production_stop_date":        { "$ref": "#/$defs/ISODate" },
+            "daily_downtime_cost_eur":     { "$ref": "#/$defs/EuroAmount" },
+            "downtime_exposure_days":      { "type": "number" },
+            "total_downtime_exposure_eur": { "$ref": "#/$defs/EuroAmount" },
+            "contract_penalty_eur_per_day": { "$ref": "#/$defs/EuroAmount" },
+            "total_financial_exposure_eur": { "type": "number" }
+          }
+        }
+      }
+    },
+
+    "disruption_context": {
+      "type": "object",
+      "required": ["alert_id", "alert_type", "severity", "detected_at", "summary"],
+      "properties": {
+        "alert_id":      { "type": "string" },
+        "alert_type":    { "type": "string" },
+        "trigger":       { "type": "string" },
+        "severity":      { "$ref": "#/$defs/AlertSeverity" },
+        "detected_at":   { "$ref": "#/$defs/ISODateTime" },
+        "triggered_by_condition": { "type": "string" },
+        "summary":       { "type": "string" },
+        "risk_signals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExternalSignal" }
+        }
+      }
+    },
+
+    "prediction_signals": {
+      "type": "object",
+      "required": ["model_version", "confidence_score"],
+      "properties": {
+        "model_version":     { "type": "string" },
+        "generated_at":      { "$ref": "#/$defs/ISODateTime" },
+        "delay_probability": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Probability" }
+        },
+        "eta_scenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["scenario_id", "label", "probability"],
+            "properties": {
+              "scenario_id": { "type": "string" },
+              "label":       { "type": "string" },
+              "eta":         { "$ref": "#/$defs/ISODate" },
+              "delay_days":  { "type": "number" },
+              "probability": { "$ref": "#/$defs/Probability" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "risk_drivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "severity"],
+            "properties": {
+              "type":                  { "type": "string" },
+              "location":              { "type": "string" },
+              "severity":              { "$ref": "#/$defs/AlertSeverity" },
+              "estimated_impact_days": { "type": "number" }
+            }
+          }
+        },
+        "confidence_score": { "$ref": "#/$defs/Confidence" }
+      }
+    },
+
+    "business_context": {
+      "type": "object",
+      "required": ["critical_material_flag", "production_stop_risk"],
+      "properties": {
+        "critical_material_flag":          { "type": "boolean" },
+        "contract_type":                   { "type": "string" },
+        "contract_value_eur":              { "$ref": "#/$defs/EuroAmount" },
+        "customer":                        { "type": "string" },
+        "customer_id":                     { "type": "string" },
+        "relationship_tier":               { "type": "string", "enum": ["strategic", "key", "standard"] },
+        "sla_on_time_delivery_required":   { "type": "boolean" },
+        "delivery_deadline":               { "$ref": "#/$defs/ISODate" },
+        "production_stop_risk":            { "type": "boolean" },
+        "production_stop_date_if_no_action": { "$ref": "#/$defs/ISODate" },
+        "stockout_days_if_no_action":      { "type": "number" },
+        "inventory_covers_days":           { "type": "number" },
+        "replacement_available_locally":   { "type": "boolean" },
+        "backup_supplier_identified":      { "type": "boolean" },
+        "backup_supplier":                 { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "decision_constraints": {
+      "type": "object",
+      "required": ["approval_threshold_eur", "approval_chain"],
+      "properties": {
+        "approval_threshold_eur":    { "$ref": "#/$defs/EuroAmount" },
+        "auto_approve_below_threshold": { "type": "boolean" },
+        "approval_chain": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["level", "role"],
+            "properties": {
+              "level":            { "type": "integer" },
+              "role":             { "type": "string" },
+              "person_id":        { "type": "string" },
+              "name":             { "type": "string" },
+              "required_above_eur": { "$ref": "#/$defs/EuroAmount" }
+            }
+          }
+        },
+        "decision_deadline":    { "$ref": "#/$defs/ISODateTime" },
+        "deadline_reason":      { "type": "string" },
+        "constraints":          { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "organization_rules": {
+      "type": "array",
+      "description": "Hard constraints and weight overrides. Rules are evaluated deterministically before scoring. AI cannot override rules.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Rule" }
+    },
+
+    "scenarios": {
+      "type": "array",
+      "description": "SCENARIO LIST — what may happen to the shipment. Probabilistic future states. Evaluated against all candidate actions by the scoring engine. NOT the same as actions[] or engine_output.recommendation.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Scenario" }
+    },
+
+    "actions": {
+      "type": "array",
+      "description": "ACTION LIST — what we can do to mitigate. Decision options evaluated by the scoring engine. NOT the same as scenarios[] or engine_output.recommendation.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Action" }
+    },
+
+    "engine_output": {
+      "type": "object",
+      "required": ["recommendation", "score_breakdown", "rules_triggered", "explanation_trace", "approval_routing", "execution_validation"],
+      "description": "Output of the decision engine run. recommendation is the engine's conclusion — separate from scenarios and actions.",
+      "properties": {
+        "recommendation":   { "$ref": "#/$defs/Recommendation" },
+        "score_breakdown":  {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ScoreBreakdown" },
+          "description": "Score per action, including disqualified actions"
+        },
+        "rules_triggered": {
+          "type": "array",
+          "description": "Structured rule evaluation results. Must be machine-readable — not free text.",
+          "minItems": 0,
+          "items": { "$ref": "#/$defs/FiredRule" }
+        },
+        "explanation_trace": {
+          "type": "array",
+          "description": "Step-by-step agent trace. Each step is indexed and agent-attributed.",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ExplanationStep" }
+        },
+        "approval_routing": { "$ref": "#/$defs/ApprovalRouting" },
+        "execution_validation": { "$ref": "#/$defs/ExecutionValidation" },
+        "projected_outcome": { "$ref": "#/$defs/ProjectedOutcome" },
+        "mock_actual_outcome": { "$ref": "#/$defs/ActualOutcome" }
+      }
+    },
+
+    "derived_views": {
+      "type": "object",
+      "description": "Pre-derived UI view data. All values in this section must be computable from other schema sections — no value originates here. This section exists for rendering efficiency only.",
+      "properties": {
+        "mission_control": {
+          "type": "object",
+          "properties": {
+            "case_id":                { "type": "string" },
+            "action_queue_category":  { "type": "string", "enum": ["decision_required", "approval_needed", "execution_tracking"] },
+            "action_queue_priority":  { "type": "string", "enum": ["red", "amber", "green"] },
+            "headline":               { "type": "string" },
+            "recommendation_label":   { "type": "string" },
+            "confidence_pct":         { "type": "integer", "minimum": 0, "maximum": 100 },
+            "net_saving_eur":         { "type": "number" },
+            "urgency_label":          { "type": "string" },
+            "cta_label":              { "type": "string" },
+            "cta_route":              { "type": "string" },
+            "derived_from":           {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Schema paths this view was derived from. Required — documents the derivation."
+            }
+          }
+        },
+        "lena_action_queue": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "graph_structures": {
+      "type": "object",
+      "required": ["organization_graph", "decision_model_graph", "decision_lifecycle_graph"],
+      "description": "Graph-ready data structures for visual representation. Display-only — no real graph database required for V1. Nodes and edges use the same structure as a graph rendering library (e.g. React Flow, D3).",
+      "properties": {
+        "organization_graph":     { "$ref": "#/$defs/Graph" },
+        "decision_model_graph":   { "$ref": "#/$defs/Graph" },
+        "decision_lifecycle_graph": { "$ref": "#/$defs/Graph" }
+      }
+    },
+
+    "ui_binding": {
+      "type": "object",
+      "required": ["screens"],
+      "description": "Maps each UI screen to the schema paths that power it. This is the enforcement layer: no screen may use decision values outside its declared schema_paths. Validated by verify-dk-803 and verify-dk-804.",
+      "properties": {
+        "screens": {
+          "type": "object",
+          "description": "Keys are screen canonical names matching the UX IA document",
+          "minProperties": 8,
+          "properties": {
+            "mission_control":         { "$ref": "#/$defs/UIScreenBinding" },
+            "shipment_workspace":      { "$ref": "#/$defs/UIScreenBinding" },
+            "alert_detail":            { "$ref": "#/$defs/UIScreenBinding" },
+            "scenario_analysis":       { "$ref": "#/$defs/UIScreenBinding" },
+            "decision_room":           { "$ref": "#/$defs/UIScreenBinding" },
+            "approval":                { "$ref": "#/$defs/UIScreenBinding" },
+            "execution_validation":    { "$ref": "#/$defs/UIScreenBinding" },
+            "outcome_review":          { "$ref": "#/$defs/UIScreenBinding" },
+            "decision_model_explainability": { "$ref": "#/$defs/UIScreenBinding" }
+          },
+          "additionalProperties": { "$ref": "#/$defs/UIScreenBinding" }
+        }
+      }
+    }
+  }
+}

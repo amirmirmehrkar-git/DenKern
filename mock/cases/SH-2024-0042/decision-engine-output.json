@@ -1,0 +1,1037 @@
+{
+  "_comment": "Canonical decision engine contract for DenkKern V1 demo — case SH-2024-0042. This single file powers all 8 operational screens. Do NOT hardcode any UI values; derive all display data from this file. See docs/strategy/ux-v1-information-architecture.md for screen contract.",
+  "meta": {
+    "schema_version": "2.0",
+    "contract": "decision-engine-output",
+    "case_id": "SH-2024-0042",
+    "generated_at": "2026-06-15T07:42:00Z",
+    "engine_version": "dk-engine-v1.0.0",
+    "demo_mode": true,
+    "current_state": "decision_pending",
+    "screens_powered": [
+      "2-mission-control",
+      "3-shipment-workspace",
+      "4-alert-event",
+      "5-scenario-analysis",
+      "6-decision-room",
+      "7-approval",
+      "8-execution-validation",
+      "9-outcome-review"
+    ]
+  },
+
+  "industry_templates": [
+    {
+      "template_id": "shipbuilding_heavy_manufacturing",
+      "label": "Shipbuilding & Heavy Manufacturing",
+      "description": "Optimised for naval, merchant vessel, and offshore platform construction. Long lead times, critical material specs, high contract penalty exposure.",
+      "evaluation_weights": {
+        "production_continuity": 0.45,
+        "financial_impact": 0.25,
+        "customer_commitment": 0.20,
+        "supplier_relations": 0.10
+      },
+      "approval_threshold_eur": 250000,
+      "suggested_lena_objective": "Production Continuity",
+      "suggested_lena_reports_to": "VP Operations",
+      "suggested_approval_chain": ["Department Head", "VP Operations", "CFO"],
+      "default_trigger_conditions": ["delay_days >= 5", "downtime_cost_eur >= 100000"],
+      "suggested_success_criteria": ["production_stop_averted", "cost_within_budget", "customer_commitment_met"]
+    },
+    {
+      "template_id": "food_manufacturing_import",
+      "label": "Food Manufacturing & Import Operations",
+      "description": "Perishable goods, regulatory compliance, shelf-life constraints. Emphasises speed of resolution and regulatory risk.",
+      "evaluation_weights": {
+        "production_continuity": 0.35,
+        "financial_impact": 0.30,
+        "customer_commitment": 0.25,
+        "supplier_relations": 0.10
+      },
+      "approval_threshold_eur": 75000,
+      "suggested_lena_objective": "Supply Chain Continuity",
+      "suggested_lena_reports_to": "Head of Supply Chain",
+      "suggested_approval_chain": ["Supply Chain Manager", "COO"],
+      "default_trigger_conditions": ["delay_days >= 2", "perishable_risk == true"],
+      "suggested_success_criteria": ["shelf_life_preserved", "regulatory_clearance_maintained", "customer_delivery_on_time"]
+    },
+    {
+      "template_id": "healthcare_medical_products",
+      "label": "Healthcare & Medical Products",
+      "description": "Medical device and pharmaceutical supply. Zero tolerance for stockout risk. Regulatory traceability required for every substitution.",
+      "evaluation_weights": {
+        "production_continuity": 0.40,
+        "financial_impact": 0.15,
+        "customer_commitment": 0.30,
+        "supplier_relations": 0.15
+      },
+      "approval_threshold_eur": 50000,
+      "suggested_lena_objective": "Patient Safety & Supply Continuity",
+      "suggested_lena_reports_to": "Chief Supply Officer",
+      "suggested_approval_chain": ["Quality Manager", "Supply Director", "CSO"],
+      "default_trigger_conditions": ["delay_days >= 1", "critical_medical_item == true"],
+      "suggested_success_criteria": ["no_stockout", "regulatory_traceability_maintained", "patient_safety_preserved"]
+    },
+    {
+      "template_id": "custom",
+      "label": "Custom",
+      "description": "No pre-configuration. Build your evaluation framework, approval chain, and thresholds from scratch.",
+      "evaluation_weights": {
+        "production_continuity": 0.25,
+        "financial_impact": 0.25,
+        "customer_commitment": 0.25,
+        "supplier_relations": 0.25
+      },
+      "approval_threshold_eur": 100000,
+      "suggested_lena_objective": null,
+      "suggested_lena_reports_to": null,
+      "suggested_approval_chain": [],
+      "default_trigger_conditions": [],
+      "suggested_success_criteria": []
+    }
+  ],
+
+  "lena_configuration": {
+    "_comment": "Active Lena configuration, derived from shipbuilding_heavy_manufacturing template and reviewed by operator during Smart Setup.",
+    "template_id": "shipbuilding_heavy_manufacturing",
+    "primary_objective": "Production Continuity",
+    "reports_to": "VP Operations",
+    "responsibilities": [
+      "Monitor active shipments and surface delay risk before production impact",
+      "Generate scenario options and rank by weighted evaluation framework",
+      "Route recommendations through correct approval chain",
+      "Track execution and flag deviations"
+    ],
+    "evaluation_weights": {
+      "production_continuity": 0.45,
+      "financial_impact": 0.25,
+      "customer_commitment": 0.20,
+      "supplier_relations": 0.10
+    },
+    "approval_threshold_eur": 250000,
+    "trigger_conditions": [
+      { "condition": "delay_days >= 5", "label": "Delay exceeds 5 days" },
+      { "condition": "downtime_cost_eur_projected >= 500000", "label": "Projected downtime cost exceeds €500K" },
+      { "condition": "material_criticality == critical", "label": "Material is flagged critical" }
+    ]
+  },
+
+  "organization": {
+    "company": "Neptun Shipbuilding GmbH",
+    "industry": "shipbuilding_heavy_manufacturing",
+    "headquarters": "Hamburg, Germany",
+    "sites": [
+      { "site_id": "SITE-HH-01", "name": "Hamburg Shipyard", "role": "primary_production", "active_projects": 3 },
+      { "site_id": "SITE-RO-01", "name": "Rostock Assembly", "role": "secondary_production", "active_projects": 1 }
+    ],
+    "structure": [
+      { "person_id": "P-001", "name": "Dr. Petra Schäfer",  "role": "CEO",             "influence_level": "executive",      "in_approval_chain": false },
+      { "person_id": "P-002", "name": "Mark Hoffmann",      "role": "VP Operations",   "influence_level": "executive",      "in_approval_chain": true  },
+      { "person_id": "P-003", "name": "Fatima Al-Rashid",   "role": "Head of Procurement", "influence_level": "operational","in_approval_chain": false },
+      { "person_id": "P-004", "name": "Jonas Weber",        "role": "Production Manager","influence_level": "operational",  "in_approval_chain": false },
+      { "person_id": "P-005", "name": "Lena (AI)",          "role": "Supply Chain Intelligence Agent", "influence_level": "analytical", "in_approval_chain": false }
+    ]
+  },
+
+  "shipment_context": {
+    "shipment_id": "SH-2024-0042",
+    "shipment_name": "Marine-Grade Steel Plates DH36 — MV Nordstern",
+    "material": {
+      "name": "Marine-Grade Steel Plates DH36",
+      "specification": "DH36 — DNV GL certified, hull-quality shipbuilding steel",
+      "quantity": "240 metric tonnes",
+      "unit": "metric_tonne",
+      "criticality": "critical",
+      "critical_material_flag": true,
+      "substitution_possible": false,
+      "substitution_notes": "DH36 spec is required for Hull Section 4 structural integrity per project contract. S355J2 may be used for non-structural sections only (max 15% of volume)."
+    },
+    "origin": {
+      "supplier": "Nippon Steel Corporation",
+      "location": "Yokohama, Japan",
+      "supplier_id": "SUP-NS-001"
+    },
+    "vessel": {
+      "name": "MV Nordstern",
+      "flag": "NL",
+      "imo": "9412233",
+      "current_location": "Rotterdam anchorage zone, waiting for berth",
+      "status": "delayed"
+    },
+    "route": {
+      "origin_port": "Yokohama",
+      "transit_ports": ["Singapore", "Port Said", "Rotterdam"],
+      "destination_port": "Hamburg Hafen",
+      "current_leg": "Rotterdam → Hamburg"
+    },
+    "schedule": {
+      "original_etd_yokohama": "2026-05-18",
+      "original_eta_hamburg": "2026-06-10",
+      "revised_eta_hamburg": "2026-07-04",
+      "delay_days_expected": 24,
+      "delay_cause_primary": "Rotterdam port congestion — berth unavailability 9+ days",
+      "delay_cause_secondary": "North Sea weather advisory — Beaufort 7–8 forecast June 16–19"
+    },
+    "production_context": {
+      "project": "NSB-2024-Naval — Naval Patrol Vessel 'KMS Helgoland'",
+      "production_line": "Hull Section 4 — Frames 12–18",
+      "required_by": "2026-06-24",
+      "days_until_required": 9,
+      "days_until_production_stop": 3,
+      "production_stop_date": "2026-06-18",
+      "daily_downtime_cost_eur": 340000,
+      "downtime_exposure_days": 16,
+      "total_downtime_exposure_eur": 5440000,
+      "contract_penalty_eur_per_day": 85000,
+      "contract_penalty_exposure_days": 24,
+      "total_penalty_exposure_eur": 2040000,
+      "total_financial_exposure_eur": 7480000
+    }
+  },
+
+  "disruption_context": {
+    "alert_id": "ALT-2024-0042-001",
+    "alert_type": "vessel_delay",
+    "trigger": "ETA deviation exceeds 5-day threshold",
+    "severity": "HIGH",
+    "detected_at": "2026-06-15T07:00:00Z",
+    "triggered_by_condition": "delay_days >= 5",
+    "summary": "MV Nordstern delayed 24 days due to Rotterdam port congestion. Hull Section 4 production stops in 3 days if no action taken.",
+    "risk_signals": [
+      {
+        "signal_id": "SIG-001",
+        "signal_type": "port_congestion",
+        "location": "Rotterdam",
+        "severity": "HIGH",
+        "description": "Terminal congestion — 9+ day berth delay. 14 vessels ahead in queue.",
+        "source": "PortWatch Rotterdam API",
+        "confidence": 0.94
+      },
+      {
+        "signal_id": "SIG-002",
+        "signal_type": "weather_advisory",
+        "route": "Rotterdam → Hamburg (North Sea)",
+        "severity": "MEDIUM",
+        "description": "Beaufort 7–8 forecast June 16–19. Transit likely delayed by additional 2–3 days.",
+        "source": "German Weather Service (DWD)",
+        "confidence": 0.88
+      },
+      {
+        "signal_id": "SIG-003",
+        "signal_type": "inventory_status",
+        "location": "Hamburg Shipyard",
+        "severity": "HIGH",
+        "description": "DH36 steel stock: 12 metric tonnes remaining. Covers 3 days of production. No local backup stock identified.",
+        "source": "ERP — Inventory Module",
+        "confidence": 1.00
+      }
+    ]
+  },
+
+  "prediction_signals": {
+    "model_version": "dk-prediction-v1.0",
+    "generated_at": "2026-06-15T07:30:00Z",
+    "delay_probability": {
+      "p_delay_over_5_days": 0.97,
+      "p_delay_over_10_days": 0.89,
+      "p_delay_over_20_days": 0.61
+    },
+    "eta_scenarios": [
+      {
+        "scenario_id": "ETA-OPT",
+        "label": "Optimistic — congestion clears in 3 days",
+        "eta_hamburg": "2026-06-22",
+        "delay_days": 12,
+        "probability": 0.14
+      },
+      {
+        "scenario_id": "ETA-BASE",
+        "label": "Base — current congestion + weather",
+        "eta_hamburg": "2026-07-04",
+        "delay_days": 24,
+        "probability": 0.61
+      },
+      {
+        "scenario_id": "ETA-WORST",
+        "label": "Worst case — extended congestion + mechanical issue",
+        "eta_hamburg": "2026-07-15",
+        "delay_days": 35,
+        "probability": 0.25
+      }
+    ],
+    "risk_drivers": [
+      { "type": "port_congestion",  "location": "Rotterdam",       "severity": "HIGH",   "estimated_impact_days": 9  },
+      { "type": "weather_advisory", "location": "North Sea",       "severity": "MEDIUM", "estimated_impact_days": 3  },
+      { "type": "vessel_wait_time", "location": "Rotterdam berth", "severity": "HIGH",   "estimated_impact_days": 12 }
+    ],
+    "confidence_score": 0.87
+  },
+
+  "business_context": {
+    "critical_material_flag": true,
+    "contract_type": "fixed_price_naval",
+    "contract_value_eur": 45000000,
+    "customer": "Bundeswehr Logistics Command",
+    "customer_id": "CUST-BW-001",
+    "relationship_tier": "strategic",
+    "sla_on_time_delivery_required": true,
+    "delivery_deadline": "2026-10-15",
+    "production_stop_risk": true,
+    "production_stop_date_if_no_action": "2026-06-18",
+    "stockout_days_if_no_action": 3,
+    "inventory_on_hand_mt": 12,
+    "inventory_covers_days": 3,
+    "replacement_available_locally": false,
+    "backup_supplier_identified": true,
+    "backup_supplier": {
+      "name": "ArcelorMittal Fos-sur-Mer",
+      "location": "Fos-sur-Mer, France",
+      "supplier_id": "SUP-AM-002",
+      "certified_dh36": true,
+      "available_stock_mt": 280,
+      "lead_time_air_days": 1,
+      "lead_time_road_days": 3
+    }
+  },
+
+  "decision_constraints": {
+    "approval_threshold_eur": 250000,
+    "auto_approve_below_threshold": true,
+    "approval_chain": [
+      { "level": 1, "role": "VP Operations", "person_id": "P-002", "name": "Mark Hoffmann",  "required_above_eur": 250000  },
+      { "level": 2, "role": "CFO",            "person_id": "P-CFO", "name": "Stefan Brandt",  "required_above_eur": 1000000 }
+    ],
+    "decision_deadline": "2026-06-15T18:00:00Z",
+    "deadline_reason": "Air freight booking cutoff — 18:00 today",
+    "constraints": [
+      "DH36 specification cannot be substituted for structural plates",
+      "Supplier must hold DNV GL certification",
+      "Delivery must arrive by 2026-06-24 to avoid production stop",
+      "Any cost above €250,000 requires VP Operations approval"
+    ]
+  },
+
+  "organization_rules": [
+    {
+      "rule_id": "ORG-R-001",
+      "label": "Production Continuity Override",
+      "description": "When production stop is imminent (< 5 days) on a strategic contract, production continuity score weight increases from 0.45 to 0.60. Financial weight decreases to 0.10.",
+      "condition": "days_until_production_stop <= 5 AND contract_type == strategic",
+      "active": true,
+      "weight_override": {
+        "production_continuity": 0.60,
+        "financial_impact": 0.10,
+        "customer_commitment": 0.20,
+        "supplier_relations": 0.10
+      }
+    },
+    {
+      "rule_id": "ORG-R-002",
+      "label": "Critical Material Lock",
+      "description": "When material is flagged critical and no substitution is possible, options that do not deliver the specified material are automatically disqualified.",
+      "condition": "material.critical_material_flag == true AND material.substitution_possible == false",
+      "active": true,
+      "disqualifies": ["WAIT"]
+    },
+    {
+      "rule_id": "ORG-R-003",
+      "label": "Approval Gate",
+      "description": "Any recommended action with cost above the approval_threshold_eur must be routed to the level-1 approver before execution.",
+      "condition": "action.cost_eur > lena_configuration.approval_threshold_eur",
+      "active": true
+    }
+  ],
+
+  "scenarios": [
+    {
+      "_comment": "SCENARIO = what may happen to the shipment. Not the same as ACTION (what we can do).",
+      "scenario_id": "SCN-001",
+      "label": "Base Delay — Port Congestion + Weather",
+      "description": "MV Nordstern remains at Rotterdam anchorage. Congestion clears in 9 days. Weather adds 3 days transit. Vessel arrives Hamburg July 4.",
+      "probability": 0.61,
+      "eta_hamburg": "2026-07-04",
+      "delay_days": 24,
+      "production_stop_days": 16,
+      "financial_exposure_eur": 7480000,
+      "risk_level": "critical"
+    },
+    {
+      "scenario_id": "SCN-002",
+      "label": "Optimistic — Congestion Clears Early",
+      "description": "Emergency berth allocation reduces wait to 3 days. Favourable weather. Vessel arrives Hamburg June 22.",
+      "probability": 0.14,
+      "eta_hamburg": "2026-06-22",
+      "delay_days": 12,
+      "production_stop_days": 4,
+      "financial_exposure_eur": 1360000,
+      "risk_level": "high"
+    },
+    {
+      "scenario_id": "SCN-003",
+      "label": "Worst Case — Extended Delay + Mechanical Issue",
+      "description": "Vessel develops mechanical fault during berth wait. Repairs + congestion delay arrival to July 15.",
+      "probability": 0.25,
+      "eta_hamburg": "2026-07-15",
+      "delay_days": 35,
+      "production_stop_days": 27,
+      "financial_exposure_eur": 11560000,
+      "risk_level": "critical"
+    }
+  ],
+
+  "actions": [
+    {
+      "_comment": "ACTION = what we can do to mitigate. Evaluated against all scenarios. Not the same as SCENARIO.",
+      "action_id": "ACT-001",
+      "label": "Air Freight — ArcelorMittal Fos-sur-Mer",
+      "description": "Charter air freight of 240 MT DH36 plates from ArcelorMittal's certified stock in Fos-sur-Mer, France. Cargo aircraft (AN-124) from Marseille to Hamburg Airport. Ground transport to shipyard same day.",
+      "type": "emergency_procurement",
+      "supplier": "ArcelorMittal Fos-sur-Mer",
+      "material_spec": "DH36 — DNV GL certified",
+      "cost_eur": 480000,
+      "cost_breakdown": {
+        "material_cost_eur": 312000,
+        "air_freight_charter_eur": 148000,
+        "ground_transport_eur": 14000,
+        "handling_and_customs_eur": 6000
+      },
+      "estimated_arrival": "2026-06-16",
+      "arrival_days_from_now": 1,
+      "delivery_confidence": 0.97,
+      "risk_level": "low",
+      "meets_spec": true,
+      "requires_approval": true,
+      "approval_reason": "cost_exceeds_threshold",
+      "booking_deadline": "2026-06-15T18:00:00Z",
+      "feasibility": "confirmed — ArcelorMittal stock verified, AN-124 available Marseille June 15"
+    },
+    {
+      "action_id": "ACT-002",
+      "label": "Road Freight — ThyssenKrupp Duisburg Warehouse",
+      "description": "Emergency road transport from ThyssenKrupp backup stock in Duisburg. TIR-certified flatbed convoy. Estimated 18-hour road time Hamburg arrival June 17.",
+      "type": "emergency_procurement",
+      "supplier": "ThyssenKrupp Steel Europe",
+      "material_spec": "DH36 — DNV GL certified",
+      "cost_eur": 62000,
+      "cost_breakdown": {
+        "material_cost_eur": 44000,
+        "road_freight_eur": 15500,
+        "handling_eur": 2500
+      },
+      "estimated_arrival": "2026-06-17",
+      "arrival_days_from_now": 2,
+      "delivery_confidence": 0.76,
+      "risk_level": "medium",
+      "meets_spec": true,
+      "requires_approval": false,
+      "approval_reason": null,
+      "booking_deadline": "2026-06-16T09:00:00Z",
+      "feasibility": "conditional — ThyssenKrupp stock partially available (180 MT confirmed, 60 MT on hold pending internal release)"
+    },
+    {
+      "action_id": "ACT-003",
+      "label": "Split Order — S355J2 Local + Wait for DH36",
+      "description": "Source 36 MT of S355J2 steel (permitted for non-structural sections only) from Hamburg local stockist for frames 12–14. Wait for original DH36 shipment for frames 15–18. Reduces but does not eliminate downtime.",
+      "type": "partial_substitution",
+      "supplier": "Stahl Hamburg GmbH (local)",
+      "material_spec": "S355J2 (non-structural sections only) + DH36 (original shipment)",
+      "cost_eur": 95000,
+      "cost_breakdown": {
+        "s355j2_material_eur": 28000,
+        "local_delivery_eur": 4000,
+        "partial_downtime_cost_eur": 63000
+      },
+      "estimated_arrival": "2026-06-16",
+      "arrival_days_from_now": 1,
+      "delivery_confidence": 0.91,
+      "risk_level": "medium",
+      "meets_spec": false,
+      "meets_spec_notes": "S355J2 only approved for 15% of volume (non-structural). Structural plates (frames 15–18) still require original DH36 delivery.",
+      "requires_approval": false,
+      "approval_reason": null,
+      "booking_deadline": null,
+      "feasibility": "confirmed for S355J2 portion — DH36 portion depends on shipment arrival (SCN-001: July 4)"
+    },
+    {
+      "action_id": "ACT-004",
+      "label": "Wait for Original Shipment",
+      "description": "Take no action. Wait for MV Nordstern to arrive. Production line stops June 18 for estimated 16 days under base scenario.",
+      "type": "no_action",
+      "supplier": "Nippon Steel Corporation (original)",
+      "material_spec": "DH36 — DNV GL certified (original order)",
+      "cost_eur": 0,
+      "cost_breakdown": {
+        "action_cost_eur": 0,
+        "projected_downtime_cost_eur": 5440000,
+        "projected_penalty_cost_eur": 2040000
+      },
+      "estimated_arrival": "2026-07-04",
+      "arrival_days_from_now": 19,
+      "delivery_confidence": 0.61,
+      "risk_level": "critical",
+      "meets_spec": true,
+      "requires_approval": false,
+      "approval_reason": null,
+      "booking_deadline": null,
+      "feasibility": "confirmed — but production stop is certain under base and worst-case scenarios"
+    }
+  ],
+
+  "engine_output": {
+    "_comment": "RECOMMENDATION = what DenkKern suggests. Derived from scoring all actions against all scenarios under the active evaluation framework and organization rules. The recommendation is NOT a scenario and NOT an action — it is the engine's ranked output.",
+
+    "recommendation": {
+      "action_id": "ACT-001",
+      "label": "Air Freight — ArcelorMittal Fos-sur-Mer",
+      "confidence": 0.87,
+      "composite_score": 0.912,
+      "rank": 1,
+      "financial_impact_summary": {
+        "action_cost_eur": 480000,
+        "downtime_averted_eur": 5440000,
+        "penalty_averted_eur": 2040000,
+        "net_saving_vs_wait_eur": 7000000,
+        "net_cost_vs_wait_eur": -7000000
+      },
+      "requires_approval": true,
+      "approval_required_reason": "Action cost €480,000 exceeds approval threshold of €250,000",
+      "recommended_at": "2026-06-15T07:42:00Z"
+    },
+
+    "score_breakdown": [
+      {
+        "action_id": "ACT-001",
+        "rank": 1,
+        "composite_score": 0.912,
+        "eligible": true,
+        "disqualified": false,
+        "disqualification_reason": null,
+        "dimension_scores": {
+          "production_continuity": {
+            "raw": 1.00,
+            "weight": 0.60,
+            "weighted": 0.600,
+            "rationale": "Arrives June 16 — 2 days before production stop. 97% delivery confidence. Production stop fully averted."
+          },
+          "financial_impact": {
+            "raw": 0.52,
+            "weight": 0.10,
+            "weighted": 0.052,
+            "rationale": "Action cost €480K is high. Offset by €7M total exposure averted. Net saving justifies cost under ORG-R-001 weight override."
+          },
+          "customer_commitment": {
+            "raw": 1.00,
+            "weight": 0.20,
+            "weighted": 0.200,
+            "rationale": "Production resumes June 17. Naval vessel delivery deadline October 15 preserved. No customer commitment breach."
+          },
+          "supplier_relations": {
+            "raw": 0.60,
+            "weight": 0.10,
+            "weighted": 0.060,
+            "rationale": "Original Nippon Steel order retained. ArcelorMittal emergency order has minimal impact on existing supplier relationships."
+          }
+        },
+        "rules_applied": ["ORG-R-001", "ORG-R-003"]
+      },
+      {
+        "action_id": "ACT-002",
+        "rank": 2,
+        "composite_score": 0.774,
+        "eligible": true,
+        "disqualified": false,
+        "disqualification_reason": null,
+        "dimension_scores": {
+          "production_continuity": {
+            "raw": 0.76,
+            "weight": 0.60,
+            "weighted": 0.456,
+            "rationale": "Arrives June 17 — 1 day before stop. 76% confidence introduces 24% probability of production stop. Partial DH36 shortfall (60 MT on hold) creates further uncertainty."
+          },
+          "financial_impact": {
+            "raw": 0.94,
+            "weight": 0.10,
+            "weighted": 0.094,
+            "rationale": "Low action cost €62K. Below approval threshold."
+          },
+          "customer_commitment": {
+            "raw": 0.76,
+            "weight": 0.20,
+            "weighted": 0.152,
+            "rationale": "Conditional on full stock release. If 60 MT hold not resolved, production partially impacted. Customer commitment at moderate risk."
+          },
+          "supplier_relations": {
+            "raw": 0.72,
+            "weight": 0.10,
+            "weighted": 0.072,
+            "rationale": "ThyssenKrupp is an established backup supplier. Emergency order is within normal operating relationship."
+          }
+        },
+        "rules_applied": ["ORG-R-001"]
+      },
+      {
+        "action_id": "ACT-003",
+        "rank": 3,
+        "composite_score": 0.581,
+        "eligible": true,
+        "disqualified": false,
+        "disqualification_reason": null,
+        "dimension_scores": {
+          "production_continuity": {
+            "raw": 0.50,
+            "weight": 0.60,
+            "weighted": 0.300,
+            "rationale": "Partial solution only. Non-structural frames proceed; structural frames (15–18) blocked until DH36 arrives July 4. 16-day partial stop remains."
+          },
+          "financial_impact": {
+            "raw": 0.82,
+            "weight": 0.10,
+            "weighted": 0.082,
+            "rationale": "Low direct cost €95K. Partial downtime cost unavoidable. Better than full wait."
+          },
+          "customer_commitment": {
+            "raw": 0.55,
+            "weight": 0.20,
+            "weighted": 0.110,
+            "rationale": "Partial work continues. Delivery deadline at moderate risk depending on rescheduling feasibility."
+          },
+          "supplier_relations": {
+            "raw": 0.89,
+            "weight": 0.10,
+            "weighted": 0.089,
+            "rationale": "Original Nippon order untouched. Minimal supplier impact."
+          }
+        },
+        "rules_applied": ["ORG-R-001"]
+      },
+      {
+        "action_id": "ACT-004",
+        "rank": 4,
+        "composite_score": 0.093,
+        "eligible": false,
+        "disqualified": true,
+        "disqualification_reason": "ORG-R-002: Critical material flag active and substitution not possible. Waiting for delayed shipment with 16-day production stop violates Production Continuity rule on strategic contract.",
+        "dimension_scores": {
+          "production_continuity": {
+            "raw": 0.00,
+            "weight": 0.60,
+            "weighted": 0.000,
+            "rationale": "Production stops June 18. 16-day downtime under base scenario."
+          },
+          "financial_impact": {
+            "raw": 0.05,
+            "weight": 0.10,
+            "weighted": 0.005,
+            "rationale": "Zero action cost. But €7.48M total exposure (downtime + penalties) makes this the worst financial outcome."
+          },
+          "customer_commitment": {
+            "raw": 0.40,
+            "weight": 0.20,
+            "weighted": 0.080,
+            "rationale": "Naval vessel delivery at high risk. 16-day slip may cascade into delivery deadline breach."
+          },
+          "supplier_relations": {
+            "raw": 1.00,
+            "weight": 0.10,
+            "weighted": 0.100,
+            "rationale": "No disruption to Nippon Steel relationship. Original order untouched."
+          }
+        },
+        "rules_applied": ["ORG-R-001", "ORG-R-002"]
+      }
+    ],
+
+    "rules_triggered": [
+      {
+        "rule_id": "ORG-R-001",
+        "label": "Production Continuity Override",
+        "triggered": true,
+        "trigger_values": {
+          "days_until_production_stop": 3,
+          "contract_type": "strategic"
+        },
+        "effect": "Production continuity weight increased from 0.45 → 0.60. Financial weight decreased from 0.25 → 0.10.",
+        "applied_to_actions": ["ACT-001", "ACT-002", "ACT-003", "ACT-004"]
+      },
+      {
+        "rule_id": "ORG-R-002",
+        "label": "Critical Material Lock",
+        "triggered": true,
+        "trigger_values": {
+          "material_critical_flag": true,
+          "substitution_possible": false
+        },
+        "effect": "ACT-004 (Wait) disqualified. Full DH36 substitution not available. Production stop under base scenario is certain.",
+        "applied_to_actions": ["ACT-004"],
+        "disqualifies": ["ACT-004"]
+      },
+      {
+        "rule_id": "ORG-R-003",
+        "label": "Approval Gate",
+        "triggered": true,
+        "trigger_values": {
+          "recommended_action_cost_eur": 480000,
+          "approval_threshold_eur": 250000
+        },
+        "effect": "ACT-001 requires Level-1 approval from VP Operations (Mark Hoffmann) before execution.",
+        "applied_to_actions": ["ACT-001"]
+      }
+    ],
+
+    "explanation_trace": [
+      { "step": 1, "agent": "signal_collector",    "output": "3 risk signals loaded: port_congestion (HIGH), weather_advisory (MEDIUM), inventory_status (HIGH)" },
+      { "step": 2, "agent": "scenario_generator",  "output": "3 ETA scenarios generated: SCN-001 (p=0.61), SCN-002 (p=0.14), SCN-003 (p=0.25)" },
+      { "step": 3, "agent": "rule_engine",         "output": "ORG-R-001 triggered: days_until_production_stop=3, contract_type=strategic. Weights overridden." },
+      { "step": 4, "agent": "rule_engine",         "output": "ORG-R-002 triggered: critical_material_flag=true, substitution_possible=false. ACT-004 disqualified." },
+      { "step": 5, "agent": "action_generator",    "output": "4 candidate actions generated. 3 eligible after rule disqualification." },
+      { "step": 6, "agent": "scoring_engine",      "output": "Scores computed with overridden weights: ACT-001=0.912, ACT-002=0.774, ACT-003=0.581, ACT-004=0.093 (disqualified)" },
+      { "step": 7, "agent": "scoring_engine",      "output": "Highest eligible score: ACT-001 (0.912). Recommendation confirmed." },
+      { "step": 8, "agent": "approval_router",     "output": "ACT-001 cost €480K > threshold €250K. ORG-R-003 triggered. Approval required: Mark Hoffmann (VP Operations)." },
+      { "step": 9, "agent": "execution_planner",   "output": "Execution validation checklist generated for ACT-001. 6 checkpoints defined." },
+      { "step": 10, "agent": "outcome_projector",  "output": "Projected outcome: production resumes June 17. Net saving vs wait: €7.0M." }
+    ],
+
+    "approval_routing": {
+      "_comment": "Derived from ORG-R-003 + decision_constraints.approval_chain. Cost > threshold → approval required.",
+      "approval_required": true,
+      "approval_required_reason": "ACT-001 cost €480,000 exceeds Lena configuration approval threshold of €250,000",
+      "cost_eur": 480000,
+      "threshold_eur": 250000,
+      "delta_eur": 230000,
+      "approval_level": 1,
+      "approver": {
+        "person_id": "P-002",
+        "name": "Mark Hoffmann",
+        "role": "VP Operations",
+        "contact": "m.hoffmann@neptun-shipbuilding.de",
+        "response_deadline": "2026-06-15T18:00:00Z",
+        "response_deadline_reason": "Air freight booking cutoff 18:00 CET"
+      },
+      "approval_status": "pending",
+      "approval_requested_at": "2026-06-15T07:42:00Z",
+      "approved_at": null,
+      "approved_by": null,
+      "override_possible": false,
+      "override_notes": "No override permitted for actions > threshold on strategic contracts (ORG-R-003)"
+    },
+
+    "execution_validation": {
+      "_comment": "Checklist generated by execution_planner agent. All items must be confirmed before execution is marked complete.",
+      "action_id": "ACT-001",
+      "checklist": [
+        {
+          "item_id": "EXV-001",
+          "label": "ArcelorMittal stock confirmation",
+          "description": "Confirm 240 MT DH36 DNV GL certified plates physically available and reserved at Fos-sur-Mer.",
+          "owner": "Fatima Al-Rashid (Head of Procurement)",
+          "deadline": "2026-06-15T14:00:00Z",
+          "status": "pending",
+          "blocking": true
+        },
+        {
+          "item_id": "EXV-002",
+          "label": "AN-124 charter booking confirmed",
+          "description": "Antonov AN-124 charter from Marseille Provence Airport confirmed, cargo manifest approved, slot reserved.",
+          "owner": "Fatima Al-Rashid (Head of Procurement)",
+          "deadline": "2026-06-15T18:00:00Z",
+          "status": "pending",
+          "blocking": true
+        },
+        {
+          "item_id": "EXV-003",
+          "label": "DNV GL certificate validated",
+          "description": "DNV GL certification documents for the specific batch received and cross-checked against hull specification requirements.",
+          "owner": "Jonas Weber (Production Manager)",
+          "deadline": "2026-06-15T20:00:00Z",
+          "status": "pending",
+          "blocking": true
+        },
+        {
+          "item_id": "EXV-004",
+          "label": "Hamburg unloading crew and equipment confirmed",
+          "description": "Hamburg Airport heavy-load crane and flatbed transport to shipyard confirmed for June 16 arrival.",
+          "owner": "Jonas Weber (Production Manager)",
+          "deadline": "2026-06-16T06:00:00Z",
+          "status": "pending",
+          "blocking": false
+        },
+        {
+          "item_id": "EXV-005",
+          "label": "Customs pre-clearance filed",
+          "description": "Import customs pre-clearance for EN goods from France filed. Broker instructed. Expected fast-track (EU internal).",
+          "owner": "Fatima Al-Rashid (Head of Procurement)",
+          "deadline": "2026-06-15T22:00:00Z",
+          "status": "pending",
+          "blocking": false
+        },
+        {
+          "item_id": "EXV-006",
+          "label": "Production line readiness confirmed",
+          "description": "Hull Section 4 production line cleared and ready for DH36 receipt on June 16. Crew on standby.",
+          "owner": "Jonas Weber (Production Manager)",
+          "deadline": "2026-06-16T07:00:00Z",
+          "status": "pending",
+          "blocking": false
+        }
+      ],
+      "blocking_items": ["EXV-001", "EXV-002", "EXV-003"],
+      "non_blocking_items": ["EXV-004", "EXV-005", "EXV-006"],
+      "execution_can_proceed": false,
+      "execution_cannot_proceed_reason": "Approval pending (ORG-R-003). Blocking checklist items EXV-001, EXV-002, EXV-003 not yet confirmed."
+    },
+
+    "projected_outcome": {
+      "action_id": "ACT-001",
+      "scenario_basis": "SCN-001 (base, p=0.61)",
+      "production_stop_averted": true,
+      "production_resumes": "2026-06-17",
+      "days_saved": 16,
+      "cost_action_eur": 480000,
+      "cost_downtime_averted_eur": 5440000,
+      "cost_penalty_averted_eur": 2040000,
+      "net_benefit_eur": 7000000,
+      "customer_commitment_met": true,
+      "delivery_deadline_preserved": "2026-10-15",
+      "original_shipment_status": "Continue — MV Nordstern proceeds to Hamburg for future projects. Original order retained."
+    },
+
+    "mock_actual_outcome": {
+      "_comment": "Pre-seeded mock outcome for demo — simulates what actually happened after execution.",
+      "recorded_at": "2026-06-19T16:00:00Z",
+      "action_executed": "ACT-001",
+      "execution_status": "completed",
+      "actual_delivery_date": "2026-06-16T14:30:00Z",
+      "delivery_on_time": true,
+      "production_stopped": false,
+      "actual_downtime_days": 0,
+      "actual_cost_eur": 483200,
+      "cost_vs_projection_eur": 3200,
+      "cost_variance_reason": "Minor additional customs broker fee",
+      "customer_commitment_met": true,
+      "approval_obtained": true,
+      "approval_obtained_at": "2026-06-15T11:23:00Z",
+      "approved_by": "Mark Hoffmann (VP Operations)",
+      "execution_checklist_completed": true,
+      "outcome_confirmed_by": "Jonas Weber (Production Manager)",
+      "lessons_learned": "Early signal detection (9 days before production stop) was critical. Booking cutoff enforced 10-hour decision window.",
+      "outcome_label": "SUCCESS — Production continuity preserved. €7.0M net saving delivered."
+    }
+  },
+
+  "derived_views": {
+    "_comment": "These views are derived from engine_output fields. No UI values are hardcoded here — all values reference engine_output above.",
+
+    "mission_control": {
+      "case_id": "SH-2024-0042",
+      "action_queue_category": "decision_required",
+      "action_queue_priority": "red",
+      "headline": "SH-2024-0042 · Vessel delay · Rotterdam → Hamburg",
+      "recommendation_label": "Air Freight — ArcelorMittal Fos-sur-Mer",
+      "confidence_pct": 87,
+      "net_saving_eur": 7000000,
+      "urgency_label": "Production stops in 3 days",
+      "cta_label": "Review Decision →",
+      "cta_route": "/shipments/SH-2024-0042/decision",
+      "derived_from": ["engine_output.recommendation", "shipment_context.production_context", "engine_output.approval_routing"]
+    },
+
+    "lena_action_queue": {
+      "item_id": "LAQ-SH-2024-0042",
+      "category": "🔴 DECISION REQUIRED",
+      "shipment_id": "SH-2024-0042",
+      "material": "Marine-Grade Steel Plates DH36",
+      "route_label": "Rotterdam → Hamburg",
+      "recommended_action": "Air Freight — ArcelorMittal",
+      "confidence_pct": 87,
+      "net_saving_eur": 7000000,
+      "urgency": "Production stops in 3 days",
+      "cta": "Review Decision →",
+      "approval_status": null,
+      "waiting_on": null,
+      "note": "Approval required after decision accepted (cost > threshold). Mark Hoffmann, VP Operations. Deadline 18:00 today."
+    }
+  },
+
+  "graph_structures": {
+    "_comment": "Graph-ready structures for visual representation. These are display-only — no real graph DB is required for V1 demo.",
+
+    "organization_graph": {
+      "description": "Org structure as a directed graph. Nodes = people/roles. Edges = reporting lines and approval paths.",
+      "nodes": [
+        { "id": "P-001", "label": "Dr. Petra Schäfer",  "role": "CEO",              "type": "person",  "layer": "executive"   },
+        { "id": "P-002", "label": "Mark Hoffmann",       "role": "VP Operations",    "type": "person",  "layer": "executive"   },
+        { "id": "P-003", "label": "Fatima Al-Rashid",    "role": "Head Procurement", "type": "person",  "layer": "operational" },
+        { "id": "P-004", "label": "Jonas Weber",         "role": "Production Mgr",   "type": "person",  "layer": "operational" },
+        { "id": "P-005", "label": "Lena (AI)",           "role": "Supply Intelligence","type": "ai_agent","layer": "analytical" }
+      ],
+      "edges": [
+        { "from": "P-002", "to": "P-001", "type": "reports_to",    "label": "reports to" },
+        { "from": "P-003", "to": "P-002", "type": "reports_to",    "label": "reports to" },
+        { "from": "P-004", "to": "P-002", "type": "reports_to",    "label": "reports to" },
+        { "from": "P-005", "to": "P-002", "type": "reports_to",    "label": "reports to (primary objective)" },
+        { "from": "P-005", "to": "P-003", "type": "collaborates",  "label": "procurement actions" },
+        { "from": "P-005", "to": "P-004", "type": "collaborates",  "label": "production context" },
+        { "from": "P-002", "to": "P-002", "type": "approver",      "label": "approves decisions > €250K" }
+      ]
+    },
+
+    "decision_model_graph": {
+      "description": "Decision model as a weighted graph. Nodes = evaluation dimensions. Edges = weight relationships under active rules.",
+      "nodes": [
+        { "id": "DIM-PC", "label": "Production Continuity", "weight": 0.60, "active_rule": "ORG-R-001", "base_weight": 0.45 },
+        { "id": "DIM-FI", "label": "Financial Impact",      "weight": 0.10, "active_rule": "ORG-R-001", "base_weight": 0.25 },
+        { "id": "DIM-CC", "label": "Customer Commitment",   "weight": 0.20, "active_rule": null,          "base_weight": 0.20 },
+        { "id": "DIM-SR", "label": "Supplier Relations",    "weight": 0.10, "active_rule": null,          "base_weight": 0.10 }
+      ],
+      "edges": [
+        { "from": "ORG-R-001", "to": "DIM-PC", "type": "weight_override", "label": "0.45 → 0.60" },
+        { "from": "ORG-R-001", "to": "DIM-FI", "type": "weight_override", "label": "0.25 → 0.10" }
+      ],
+      "rules": [
+        { "id": "ORG-R-001", "label": "Production Override", "active": true  },
+        { "id": "ORG-R-002", "label": "Critical Material",   "active": true  },
+        { "id": "ORG-R-003", "label": "Approval Gate",       "active": true  }
+      ]
+    },
+
+    "decision_lifecycle_graph": {
+      "description": "Decision lifecycle as a directed state machine. Nodes = lifecycle states. Edges = transitions.",
+      "current_state": "decision_required",
+      "nodes": [
+        { "id": "S1",  "label": "Alert Detected",         "state": "alert_detected",        "status": "completed" },
+        { "id": "S2",  "label": "Scenarios Generated",    "state": "scenarios_generated",   "status": "completed" },
+        { "id": "S3",  "label": "Recommendation Ready",   "state": "recommendation_ready",  "status": "completed" },
+        { "id": "S4",  "label": "Decision Required",      "state": "decision_required",     "status": "active"    },
+        { "id": "S5",  "label": "Approval Needed",        "state": "approval_needed",       "status": "pending"   },
+        { "id": "S6",  "label": "Execution Started",      "state": "execution_started",     "status": "pending"   },
+        { "id": "S7",  "label": "Execution Tracking",     "state": "execution_tracking",    "status": "pending"   },
+        { "id": "S8",  "label": "Outcome Confirmed",      "state": "outcome_confirmed",     "status": "pending"   }
+      ],
+      "edges": [
+        { "from": "S1", "to": "S2", "label": "signal processing complete" },
+        { "from": "S2", "to": "S3", "label": "scoring engine complete"    },
+        { "from": "S3", "to": "S4", "label": "recommendation surfaced"    },
+        { "from": "S4", "to": "S5", "label": "operator accepts → cost > threshold" },
+        { "from": "S4", "to": "S6", "label": "operator accepts → cost ≤ threshold (auto-approve)" },
+        { "from": "S5", "to": "S6", "label": "VP approves"                },
+        { "from": "S5", "to": "S4", "label": "VP rejects → re-evaluate"  },
+        { "from": "S6", "to": "S7", "label": "execution validation passed" },
+        { "from": "S7", "to": "S8", "label": "all milestones confirmed"   }
+      ]
+    }
+  },
+
+  "state_machine": {
+    "current_state": "decision_pending",
+    "states": [
+      { "state_id": "monitoring_active",            "type": "initial",      "label": "Monitoring Active",              "ui_screen_id": null },
+      { "state_id": "disruption_detected",          "type": "active",       "label": "Disruption Detected",            "ui_screen_id": null },
+      { "state_id": "alert_generated",              "type": "active",       "label": "Alert Generated",                "ui_screen_id": "alert_detail" },
+      { "state_id": "disruption_context_opened",    "type": "active",       "label": "Disruption Context Opened",      "ui_screen_id": "shipment_workspace" },
+      { "state_id": "scenarios_generated",          "type": "active",       "label": "Scenarios Generated",            "ui_screen_id": "scenario_analysis" },
+      { "state_id": "recommendation_ranked",        "type": "active",       "label": "Recommendation Ranked",          "ui_screen_id": "scenario_analysis" },
+      { "state_id": "decision_pending",             "type": "human_gate",   "label": "Decision Pending",               "ui_screen_id": "decision_room" },
+      { "state_id": "decision_approved",            "type": "human_gate",   "label": "Decision Approved",              "ui_screen_id": "approval" },
+      { "state_id": "second_approval_pending",      "type": "human_gate",   "label": "Second Approval Pending",        "ui_screen_id": "approval" },
+      { "state_id": "second_approval_confirmed",    "type": "human_gate",   "label": "Second Approval Confirmed",      "ui_screen_id": "approval" },
+      { "state_id": "execution_validation_pending", "type": "active",       "label": "Execution Validation Pending",   "ui_screen_id": "execution_validation" },
+      { "state_id": "execution_started",            "type": "active",       "label": "Execution Started",              "ui_screen_id": "execution_validation" },
+      { "state_id": "execution_monitoring",         "type": "active",       "label": "Execution Monitoring",           "ui_screen_id": "execution_validation" },
+      { "state_id": "needs_re_evaluation",          "type": "active",       "label": "Needs Re-Evaluation",            "ui_screen_id": "scenario_analysis" },
+      { "state_id": "outcome_pending",              "type": "active",       "label": "Outcome Pending",                "ui_screen_id": "outcome_review" },
+      { "state_id": "outcome_confirmed",            "type": "human_gate",   "label": "Outcome Confirmed",              "ui_screen_id": "outcome_review" },
+      { "state_id": "audit_logged",                 "type": "system",       "label": "Audit Logged",                   "ui_screen_id": null },
+      { "state_id": "closed",                       "type": "terminal",     "label": "Closed",                         "ui_screen_id": null }
+    ],
+    "transitions": [
+      { "id": "TRN-001", "from": "monitoring_active",         "to": "disruption_detected",          "trigger": "ais_deviation OR port_congestion_alert",     "allowed_roles": ["system"],                              "required_conditions": ["ais_deviation_threshold_exceeded"],                                          "reversible": false },
+      { "id": "TRN-002", "from": "disruption_detected",       "to": "alert_generated",              "trigger": "alert_threshold_crossed",                    "allowed_roles": ["system"],                              "required_conditions": ["disruption_severity IN [HIGH, CRITICAL]"],                                   "reversible": false },
+      { "id": "TRN-003", "from": "alert_generated",           "to": "disruption_context_opened",    "trigger": "user_opens_case",                            "allowed_roles": ["supply_planner", "logistics_manager"], "required_conditions": ["case_not_already_open"],                                                     "reversible": true  },
+      { "id": "TRN-004", "from": "disruption_context_opened", "to": "scenarios_generated",          "trigger": "engine_generates_scenarios",                 "allowed_roles": ["system"],                              "required_conditions": ["prediction_signals.external_signals.length >= 1"],                           "reversible": false },
+      { "id": "TRN-005", "from": "scenarios_generated",       "to": "recommendation_ranked",        "trigger": "engine_ranks_recommendation",                "allowed_roles": ["system"],                              "required_conditions": ["actions.length >= 1"],                                                       "reversible": false },
+      { "id": "TRN-006", "from": "recommendation_ranked",     "to": "decision_pending",             "trigger": "user_enters_decision_room",                  "allowed_roles": ["supply_planner", "logistics_manager"], "required_conditions": ["engine_output.recommendation.action_id IS NOT NULL"],                        "reversible": false },
+      { "id": "TRN-007", "from": "decision_pending",          "to": "decision_approved",            "trigger": "user_approves_recommendation",               "allowed_roles": ["supply_planner", "logistics_manager"], "required_conditions": ["recommendation_reviewed"],                                                   "reversible": false },
+      { "id": "TRN-009", "from": "decision_approved",         "to": "second_approval_pending",      "trigger": "cost_exceeds_threshold",                     "allowed_roles": ["system"],                              "required_conditions": ["recommended_action.cost_eur > lena_configuration.approval_threshold_eur"],   "reversible": false },
+      { "id": "TRN-010", "from": "second_approval_pending",   "to": "second_approval_confirmed",    "trigger": "vp_approves",                                "allowed_roles": ["vp_operations", "c_suite"],            "required_conditions": ["approval_request_submitted"],                                                "reversible": false },
+      { "id": "TRN-012", "from": "second_approval_confirmed", "to": "execution_validation_pending", "trigger": "system_prepares_checklist",                  "allowed_roles": ["system"],                              "required_conditions": ["approval_routing.approval_status === approved"],                             "reversible": false },
+      { "id": "TRN-013", "from": "execution_validation_pending", "to": "execution_started",         "trigger": "all_blocking_items_confirmed",               "allowed_roles": ["logistics_manager"],                   "required_conditions": ["execution_validation.blocking_items ALL status === confirmed"],               "reversible": false },
+      { "id": "TRN-014", "from": "execution_started",         "to": "execution_monitoring",         "trigger": "booking_confirmed",                          "allowed_roles": ["system"],                              "required_conditions": ["booking_confirmation_received"],                                             "reversible": false },
+      { "id": "TRN-016", "from": "execution_monitoring",      "to": "outcome_pending",              "trigger": "delivery_confirmed",                         "allowed_roles": ["system"],                              "required_conditions": ["delivery_event_received"],                                                   "reversible": false },
+      { "id": "TRN-017", "from": "outcome_pending",           "to": "outcome_confirmed",            "trigger": "user_reviews_outcome",                       "allowed_roles": ["supply_planner", "logistics_manager"], "required_conditions": ["outcome_report_generated"],                                                  "reversible": false },
+      { "id": "TRN-018", "from": "outcome_confirmed",         "to": "audit_logged",                 "trigger": "system_logs_audit_trail",                    "allowed_roles": ["system"],                              "required_conditions": ["outcome_review_complete"],                                                   "reversible": false },
+      { "id": "TRN-019", "from": "audit_logged",              "to": "closed",                       "trigger": "case_closed",                                "allowed_roles": ["system"],                              "required_conditions": ["audit_log_written"],                                                         "reversible": false }
+    ],
+    "human_gates":     ["decision_pending", "decision_approved", "second_approval_pending", "second_approval_confirmed", "outcome_confirmed"],
+    "terminal_states": ["closed"],
+    "irreversible_after": "execution_started"
+  },
+
+  "ui_binding": {
+    "contract_version": "1.0.0",
+    "screens": {
+      "mission_control": {
+        "screen_id": "2", "title": "Mission Control",
+        "primary_data_source": "derived_views.mission_control",
+        "schema_paths": ["derived_views.mission_control", "derived_views.lena_action_queue", "engine_output.recommendation"],
+        "api_endpoint": "/api/demo/mission-control",
+        "no_hardcoded_values": true
+      },
+      "shipment_workspace": {
+        "screen_id": "3", "title": "Shipment Workspace",
+        "primary_data_source": "shipment_context",
+        "schema_paths": ["shipment_context", "disruption_context", "prediction_signals", "business_context"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042",
+        "no_hardcoded_values": true
+      },
+      "alert_detail": {
+        "screen_id": "4", "title": "Alert Detail",
+        "primary_data_source": "disruption_context",
+        "schema_paths": ["disruption_context", "prediction_signals.external_signals", "meta"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042",
+        "no_hardcoded_values": true
+      },
+      "scenario_analysis": {
+        "screen_id": "5", "title": "Scenario Analysis",
+        "primary_data_source": "scenarios",
+        "schema_paths": ["scenarios", "engine_output.explanation_trace", "prediction_signals"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/decision-engine",
+        "no_hardcoded_values": true
+      },
+      "decision_room": {
+        "screen_id": "6", "title": "Decision Room",
+        "primary_data_source": "engine_output.recommendation",
+        "schema_paths": ["actions", "engine_output.recommendation", "engine_output.score_breakdown", "engine_output.rules_triggered"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/decision-engine",
+        "no_hardcoded_values": true
+      },
+      "approval": {
+        "screen_id": "7", "title": "Approval",
+        "primary_data_source": "engine_output.approval_routing",
+        "schema_paths": ["engine_output.approval_routing", "actions", "engine_output.rules_triggered"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/approval",
+        "no_hardcoded_values": true
+      },
+      "execution_validation": {
+        "screen_id": "8", "title": "Execution Validation",
+        "primary_data_source": "engine_output.execution_validation",
+        "schema_paths": ["engine_output.execution_validation", "engine_output.approval_routing"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/execution-validation",
+        "no_hardcoded_values": true
+      },
+      "outcome_review": {
+        "screen_id": "9", "title": "Outcome Review",
+        "primary_data_source": "engine_output.projected_outcome",
+        "schema_paths": ["engine_output.projected_outcome", "engine_output.mock_actual_outcome"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/outcome",
+        "no_hardcoded_values": true
+      },
+      "decision_model_explainability": {
+        "screen_id": "X", "title": "Decision Model Explainability",
+        "primary_data_source": "lena_configuration",
+        "schema_paths": ["lena_configuration", "organization_rules", "engine_output.explanation_trace", "graph_structures.decision_model_graph"],
+        "api_endpoint": "/api/demo/shipments/SH-2024-0042/decision-engine",
+        "no_hardcoded_values": true
+      }
+    }
+  }
+}
