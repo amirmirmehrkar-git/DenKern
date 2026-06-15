@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
+import { attemptTransition } from '@denkkern/engine';
 
 const MOCK_ROOT = process.env['MOCK_ROOT'] ?? resolve(process.cwd(), '..', '..');
 const ENGINE_FILE = join(MOCK_ROOT, 'mock', 'cases', 'SH-2024-0042', 'decision-engine-output.json');
@@ -79,5 +80,63 @@ export async function GET(
   } catch (err) {
     console.error('[GET /api/demo/shipments/:id/execution-validation]', err);
     return NextResponse.json({ error: 'Failed to load execution validation data.' }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/demo/shipments/:id/execution-validation
+ *
+ * Validates the execution_validation_pending → execution_started transition.
+ * All blocking checklist items must have status "confirmed" before this passes.
+ *
+ * Body: { action: "confirm_execution", userRole: string }
+ * Returns 403/422/409 on rejection, 200 on success.
+ */
+export async function POST(
+  req: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { id } = params;
+
+  try {
+    const engine = loadEngine();
+
+    if (id !== engine.meta.case_id) {
+      return NextResponse.json(
+        { error: `Case '${id}' not found in demo data.` },
+        { status: 404 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const userRole: string = body?.userRole ?? 'logistics_manager';
+    const fromState = 'execution_validation_pending';
+    const toState = 'execution_started';
+
+    const result = attemptTransition(engine, fromState, toState, userRole);
+
+    if (!result.allowed) {
+      const hasRoleError = result.errors.some(e => e.code === 'ROLE_NOT_PERMITTED');
+      const hasIrreversible = result.errors.some(e => e.code === 'IRREVERSIBLE_STATE');
+      const status = hasIrreversible ? 409 : hasRoleError ? 403 : 422;
+      return NextResponse.json(
+        { allowed: false, transitionId: result.transitionId, errors: result.errors },
+        { status }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        allowed: true,
+        transitionId: result.transitionId,
+        fromState,
+        toState,
+        message: `Transition ${result.transitionId} validated — execution start confirmed`,
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error('[POST /api/demo/shipments/:id/execution-validation]', err);
+    return NextResponse.json({ error: 'Failed to process execution validation.' }, { status: 500 });
   }
 }

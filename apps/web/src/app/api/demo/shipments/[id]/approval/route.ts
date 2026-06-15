@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
+import { attemptTransition } from '@denkkern/engine';
 
 const MOCK_ROOT = process.env['MOCK_ROOT'] ?? resolve(process.cwd(), '..', '..');
 const ENGINE_FILE = join(MOCK_ROOT, 'mock', 'cases', 'SH-2024-0042', 'decision-engine-output.json');
@@ -85,5 +86,64 @@ export async function GET(
   } catch (err) {
     console.error('[GET /api/demo/shipments/:id/approval]', err);
     return NextResponse.json({ error: 'Failed to load approval data.' }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/demo/shipments/:id/approval
+ *
+ * Validates the decision_pending → decision_approved transition via
+ * StateMachineExecutor before accepting the approval action.
+ *
+ * Body: { action: "approve", userRole: string }
+ * Returns 403 if role not permitted, 422 if required conditions not met,
+ * 409 if irreversible state blocks the transition, 200 on success.
+ */
+export async function POST(
+  req: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
+  const { id } = params;
+
+  try {
+    const engine = loadEngine();
+
+    if (id !== engine.meta.case_id) {
+      return NextResponse.json(
+        { error: `Case '${id}' not found in demo data.` },
+        { status: 404 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const userRole: string = body?.userRole ?? 'supply_planner';
+    const fromState: string = engine.state_machine?.current_state ?? 'decision_pending';
+    const toState = 'decision_approved';
+
+    const result = attemptTransition(engine, fromState, toState, userRole);
+
+    if (!result.allowed) {
+      const hasRoleError = result.errors.some(e => e.code === 'ROLE_NOT_PERMITTED');
+      const hasIrreversible = result.errors.some(e => e.code === 'IRREVERSIBLE_STATE');
+      const status = hasIrreversible ? 409 : hasRoleError ? 403 : 422;
+      return NextResponse.json(
+        { allowed: false, transitionId: result.transitionId, errors: result.errors },
+        { status }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        allowed: true,
+        transitionId: result.transitionId,
+        fromState,
+        toState,
+        message: `Transition ${result.transitionId} validated — approval accepted`,
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error('[POST /api/demo/shipments/:id/approval]', err);
+    return NextResponse.json({ error: 'Failed to process approval.' }, { status: 500 });
   }
 }
