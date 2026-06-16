@@ -29,13 +29,29 @@ interface SidebarProps {
 export function Sidebar({ activeCases = [] }: SidebarProps) {
   const pathname = usePathname();
 
-  function navClass(href: string) {
-    return `sidebar-nav-item${pathname === href || pathname.startsWith(href + '/') ? ' active' : ''}`;
+  function navClass(href: string, exact = false) {
+    const active = exact
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + '/');
+    return `sidebar-nav-item${active ? ' active' : ''}`;
   }
 
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">DenkKern</div>
+
+      <div className="sidebar-section-label">Demo — V1</div>
+      <div className="sidebar-nav">
+        <Link href="/demo" className={navClass('/demo', true)}>
+          <span>⬡</span> Mission Control
+        </Link>
+        <Link href="/demo/shipments" className={navClass('/demo/shipments')}>
+          <span>◎</span> Shipments
+        </Link>
+        <Link href="/demo/decision-model" className={navClass('/demo/decision-model')}>
+          <span>◈</span> Decision Model
+        </Link>
+      </div>
 
       <div className="sidebar-section-label">Navigation</div>
       <div className="sidebar-nav">
