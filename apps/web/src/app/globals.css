@@ -82,6 +82,55 @@ img, svg { display: block; max-width: 100%; }
   --weight-medium:   500;
   --weight-semibold: 600;
   --weight-bold:     700;
+
+  /* ── DK-812: Figma Make token aliases ────────────────────────────────────
+     Added by DK-812 Phase 1. These are additive — no existing DK tokens
+     were renamed. Figma components reference these names via var(--…).
+     ─────────────────────────────────────────────────────────────────────── */
+
+  /* Accent — Figma teal. Replaces --brand inside demo screens only.
+     Do NOT change .btn-primary (used outside demo). Demo screens use
+     var(--accent) inline styles so this token scopes naturally. */
+  --accent:             #2BB3A8;
+  --accent-foreground:  #FFFFFF;
+  --accent-muted:       rgba(43, 179, 168, 0.09);
+
+  /* shadcn/ui semantic aliases — map to existing DK equivalents */
+  --background:         var(--bg);          /* #f1f5f9  */
+  --foreground:         var(--text-primary); /* #0f172a  */
+  --card:               var(--surface);     /* #ffffff  */
+  --secondary:          var(--surface-2);   /* #f8fafc  */
+  --muted-foreground:   var(--text-muted);  /* #94a3b8  */
+
+  /* Navy — used as dark topbar strip in DecisionRoom */
+  --primary:            #0F1F3D;
+  --primary-foreground: #FFFFFF;
+
+  /* Status bg/border tokens — used in every Figma screen */
+  --status-critical:         var(--critical);       /* #dc2626 */
+  --status-critical-bg:      rgba(220, 38, 38, 0.08);
+  --status-critical-border:  rgba(220, 38, 38, 0.20);
+
+  --status-high:             #EA580C;
+  --status-high-bg:          rgba(234, 88, 12, 0.08);
+  --status-high-border:      rgba(234, 88, 12, 0.20);
+
+  --status-success:          #059669;
+  --status-success-bg:       rgba(5, 150, 105, 0.08);
+  --status-success-border:   rgba(5, 150, 105, 0.20);
+
+  --status-medium:           var(--warning);        /* #d97706 */
+  --status-medium-bg:        rgba(217, 119, 6, 0.08);
+  --status-medium-border:    rgba(217, 119, 6, 0.20);
+
+  /* Sidebar semantic tokens (Figma names) */
+  --sidebar:              #0B1629;
+  --sidebar-primary:      #2BB3A8;           /* teal — active item indicator  */
+  --sidebar-accent:       rgba(255,255,255,0.07);
+  --sidebar-foreground:   #94A3B8;
+
+  /* Live indicator pulse */
+  --live-pulse: #22c55e;
 }
 
 /* ─── Base ─── */
@@ -181,8 +230,11 @@ body {
 }
 
 .sidebar-nav-item.active {
-  background: var(--sidebar-active-bg);
+  /* DK-812: Figma active state — teal left border + translucent bg */
+  background: var(--sidebar-accent, rgba(255,255,255,0.07));
   color: var(--sidebar-text-active);
+  border-left: 2px solid var(--sidebar-primary, #2BB3A8);
+  padding-left: 8px; /* compensate for border-left width */
 }
 
 .sidebar-case-badge {
@@ -795,6 +847,116 @@ body {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* DK-812: Live pulse animation */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.40); }
+  70%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.00); }
+  100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.00); }
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--live-pulse);
+  animation: pulse-ring 1.8s ease-out infinite;
+  flex-shrink: 0;
+}
+
+/* DK-812: Sidebar user footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-footer-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sidebar-primary, #2BB3A8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sidebar-text-active, #fff);
+  line-height: 1.3;
+}
+
+.sidebar-footer-role {
+  font-size: 10px;
+  color: var(--sidebar-foreground, #94A3B8);
+  line-height: 1.3;
+}
+
+/* DK-812: Demo topbar additions */
+.topbar-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--live-pulse, #22c55e);
+  flex-shrink: 0;
+}
+
+.topbar-alerts-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--critical-bg, #fef2f2);
+  border: 1px solid rgba(220,38,38,0.2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--critical, #dc2626);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.topbar-alerts-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--critical, #dc2626);
+  flex-shrink: 0;
+}
+
+.topbar-timestamp {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.topbar-breadcrumb {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-breadcrumb span {
+  color: var(--text-muted);
+  margin: 0 4px;
+}
 
 .loading-overlay {
   display: flex;
