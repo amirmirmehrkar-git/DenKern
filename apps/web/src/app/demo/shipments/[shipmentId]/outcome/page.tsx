@@ -85,12 +85,11 @@ function formatDate(iso: string): string {
 }
 
 function CompareRow({
-  label, projected, actual, isGoodWhenTrue,
+  label, projected, actual,
 }: {
   label: string;
   projected: string;
   actual: string;
-  isGoodWhenTrue?: boolean;
 }) {
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }}>

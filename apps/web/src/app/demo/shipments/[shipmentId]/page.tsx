@@ -3,25 +3,52 @@
 /**
  * ShipmentWorkspacePage — /demo/shipments/:shipmentId
  *
- * Central tabbed workspace: Overview, Alerts, Decisions, Execution, Outcomes.
- * Sprint 9A — Demo UI Bridge. UX V1 Rev 3.
+ * DK-812 Phase 2C — Visual fidelity port from Figma Make export.
+ * Source: src/app/components/screens/ShipmentWorkspace.tsx (Figma Make)
  *
- * Data source: GET /api/demo/shipments/:id
- * No /api/cases/* dependency. No hardcoded decision values.
+ * Structure:
+ *   Persistent header  Ship icon · status pills · KPI cells · Scenarios CTA
+ *   Tab bar            Overview · Alerts · Decisions · Execution · Outcomes (with icons + badges)
+ *   Overview tab       Shipment Details + Disruption Snapshot + Lifecycle Timeline
+ *   Alerts tab         Red-bordered alert card + View Scenarios / Decision Room buttons
+ *   Decisions tab      Decision card with score, rules, expected outcome
+ *   Execution tab      Progress summary bar + step-by-step checklist
+ *   Outcomes tab       Closed banner + projected vs actual + prediction accuracy + lessons
+ *
+ * Data source: GET /api/demo/shipments/:id (header + alerts).
+ * Lifecycle, decisions, execution, outcomes use Figma static content
+ * (this is a demo scenario — SH-2024-0042 is a fixed story).
+ * No backend changes. No canonical JSON changes.
  */
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import {
+  Ship, MapPin, Package, AlertTriangle, GitFork, Zap, BarChart2,
+  ArrowRight, CheckCircle, Radio, TrendingDown, TrendingUp, Clock,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Types — derived from /api/demo/shipments/:id response shape
+// Types — corrected to match actual JSON field names
 // ---------------------------------------------------------------------------
+
+interface RiskSignal {
+  signal_id: string;
+  signal_type: string;
+  location?: string;
+  severity: string;
+  description: string;
+  source: string;
+  confidence: number;
+}
 
 interface EtaScenario {
+  scenario_id?: string;
   label: string;
   probability: number;
-  eta: string;
+  eta_hamburg?: string;  // JSON field name
+  eta?: string;          // legacy alias
   delay_days: number;
 }
 
@@ -31,22 +58,35 @@ interface ShipmentData {
   shipment_id: string;
   shipment_name: string;
   material: {
-    description: string;
-    material_number: string;
+    name: string;              // JSON: material.name (not .description)
+    specification?: string;
     quantity: string;
     unit: string;
+    criticality?: string;
   };
-  origin: { port: string; country: string; supplier: string };
-  vessel: { name: string; voyage: string; flag: string };
-  route: { departure_port: string; arrival_port: string; mode: string };
+  origin: {
+    supplier: string;          // JSON: origin.supplier
+    location?: string;         // JSON: origin.location
+  };
+  vessel: {
+    name: string;
+    flag: string;
+    current_location?: string;
+    status?: string;
+  };
+  route: {
+    origin_port?: string;      // JSON: route.origin_port
+    destination_port?: string; // JSON: route.destination_port
+    current_leg?: string;      // JSON: route.current_leg (e.g. "Rotterdam → Hamburg")
+    mode?: string;
+  };
   schedule: {
-    etd: string;
-    eta_original: string;
-    eta_revised: string;
-    delay_days: number;
+    revised_eta_hamburg?: string;    // JSON: schedule.revised_eta_hamburg
+    original_eta_hamburg?: string;   // JSON: schedule.original_eta_hamburg
+    delay_days_expected?: number;    // JSON: schedule.delay_days_expected
+    original_etd_yokohama?: string;
   };
   production_context: {
-    plant: string;
     production_line: string;
     days_until_production_stop: number;
     total_financial_exposure_eur: number;
@@ -57,15 +97,14 @@ interface ShipmentData {
     severity: string;
     detected_at: string;
     summary: string;
-    risk_signals: string[];
+    risk_signals: RiskSignal[];   // JSON: array of objects (not strings)
   };
   prediction: {
-    model_version: string;
-    generated_at: string;
-    delay_probability: number;
+    // delay_probability in JSON is an object {p_delay_over_5_days, ...}, not a scalar
+    delay_probability: number | { p_delay_over_5_days?: number; p_delay_over_10_days?: number };
     confidence_score: number;
     eta_scenarios: EtaScenario[];
-    risk_drivers: string[];
+    risk_drivers?: Array<{ type: string; location: string; severity: string; estimated_impact_days: number }>;
   };
   business_context: {
     critical_material_flag: boolean;
@@ -73,25 +112,81 @@ interface ShipmentData {
     customer: string;
     relationship_tier: string;
     production_stop_risk: boolean;
-    production_stop_date_if_no_action: string;
+    production_stop_date_if_no_action?: string;
     inventory_covers_days: number;
   };
   lifecycle_state: string;
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Figma static content — SH-2024-0042 demo story
+// (Matches Figma Make ShipmentWorkspace.tsx hardcoded arrays)
 // ---------------------------------------------------------------------------
 
-type TabId = 'overview' | 'alerts' | 'decisions' | 'execution' | 'outcomes';
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview',   label: 'Overview' },
-  { id: 'alerts',     label: 'Alerts' },
-  { id: 'decisions',  label: 'Decisions' },
-  { id: 'execution',  label: 'Execution' },
-  { id: 'outcomes',   label: 'Outcomes' },
+const lifecycleStages = [
+  { state: 'CREATED',          label: 'Shipment Created',  sublabel: 'SAP PO-2024-HH-0042 · Shanghai Steel Corp', time: '26 May · 09:00', done: true,  active: false, type: 'normal' as const },
+  { state: 'ALERT_GENERATED',  label: 'Alert Generated',   sublabel: 'Port congestion + ETA +36h confirmed',       time: '26 May · 14:52', done: true,  active: false, type: 'alert' as const },
+  { state: 'SCENARIO_BUILT',   label: 'Scenario Analysis', sublabel: '5 risk scenarios generated by DenkKern',    time: '26 May · 15:08', done: true,  active: false, type: 'alert' as const },
+  { state: 'DECISION_PENDING', label: 'Decision Created',  sublabel: 'Alternative Supplier selected · score 76',   time: '26 May · 15:30', done: true,  active: false, type: 'decision' as const },
+  { state: 'APPROVAL_PENDING', label: 'Approved',          sublabel: 'Lena Schmidt approved · €45K authorised',   time: '26 May · 15:47', done: true,  active: false, type: 'decision' as const },
+  { state: 'EXECUTION_RUNNING',label: 'Execution Started', sublabel: 'Thyssenkrupp Duisburg · In progress',        time: '26 May · 16:05', done: false, active: true,  type: 'execution' as const },
+  { state: 'OUTCOME_RECORDED', label: 'Outcome',           sublabel: 'Pending delivery confirmation',              time: '28 May · est.',  done: false, active: false, type: 'outcome' as const },
 ];
+
+const demoDecision = {
+  id:              'DEC-2024-0042-01',
+  action:          'Alternative European Supplier',
+  actionLabel:     'ALT SUPPLIER',
+  date:            '26 May 2024 · 15:30 UTC',
+  owner:           'Lena Schmidt',
+  score:           76,
+  confidence:      85,
+  cost:            '€45,000',
+  approvalStatus:  'APPROVED',
+  approvedBy:      'Lena Schmidt',
+  approvedAt:      '26 May 2024 · 15:47 UTC',
+  executionStatus: 'RUNNING',
+  expectedOutcome: 'Materials arrive 27 May 18:00. Production resumes 28 May 06:00. No downtime.',
+  rules:           [
+    'R-01: Buffer < 48h → escalated',
+    'R-02: 2 suppliers available → action unlocked',
+    'R-03: Cost < €75K → Lena can approve',
+  ],
+};
+
+const executionSteps: Array<{
+  id: string; label: string; detail: string; time: string;
+  status: 'done' | 'active' | 'pending';
+}> = [
+  { id: 'E1', label: 'Supplier Confirmed', detail: 'Thyssenkrupp Stahl AG, Duisburg · 2,400t DH36 available',         time: '26 May · 16:05', status: 'done' },
+  { id: 'E2', label: 'Transport Booked',   detail: '12 flatbed trucks · DHL Freight · Departure 27 May 10:00',        time: '26 May · 16:22', status: 'done' },
+  { id: 'E3', label: 'Pickup Scheduled',   detail: 'Quality inspector confirmed on-site · DNV GL certified',           time: '26 May · 17:10', status: 'done' },
+  { id: 'E4', label: 'Material Picked Up', detail: 'Loading complete · Quality inspection passed · 2,400t confirmed',  time: '27 May · 11:45', status: 'done' },
+  { id: 'E5', label: 'In Transit',         detail: 'Convoy en route · Hamburg ETA 27 May 18:00 · GPS tracking active', time: '27 May · 13:00', status: 'active' },
+  { id: 'E6', label: 'Delivered',          detail: 'Arrival at Hamburg Maritime Manufacturing facility',                time: '27 May · est. 18:00', status: 'pending' },
+  { id: 'E7', label: 'ERP Updated',        detail: 'SAP inventory updated · Production order released',                time: '27 May · est. 19:00', status: 'pending' },
+];
+
+const demoOutcome = {
+  id:          'OUT-2024-0042-01',
+  closedAt:    '28 May 2024 · 06:15 UTC',
+  summary:     'Production resumed on schedule. Alternative supplier delivered 2,400t DH36 to Hamburg facility with no production downtime.',
+  cost:     { projected: '€45,000', actual: '€44,800', delta: '−€200',      positive: true },
+  delay:    { projected: '+18h',    actual: '+16h',    delta: '−2h ahead of plan', positive: true },
+  downtime: { projected: '0h',      actual: '0h',      delta: 'No downtime', positive: true },
+  exposureAvoided:      '€750,000',
+  predictionAccuracy:   92,
+  modelNote: 'Confidence weight for alternative supplier scenarios updated 85% → 87% for future Hamburg port disruptions.',
+  lessons: [
+    'Thyssenkrupp Stahl AG pre-qualified — add to approved vendor shortlist for future DH36 shortages.',
+    'Quality inspection ran parallel to loading, saving 4h. Update SOP for future activations.',
+    'AIS anomaly at 14.2 knots (vs 18.5 baseline) is a reliable 8h early-warning signal.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function formatEur(amount: number): string {
   return new Intl.NumberFormat('de-DE', {
@@ -99,286 +194,1085 @@ function formatEur(amount: number): string {
   }).format(amount);
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function SeverityBadge({ severity }: { severity: string }) {
-  const bg =
-    severity === 'CRITICAL' ? 'var(--critical)' :
-    severity === 'HIGH'     ? '#f97316' :
-    severity === 'MEDIUM'   ? 'var(--warning)' : 'var(--text-secondary)';
+function formatDateShort(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+}
+
+/** delay_probability can be a scalar or {p_delay_over_5_days, ...} */
+function safeDelayPct(v: unknown): string {
+  if (typeof v === 'number') return `${Math.round(v * 100)}%`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, number>;
+    const n = o['p_delay_over_5_days'] ?? o['p_delay_over_10_days'] ?? 0;
+    return `${Math.round(n * 100)}%`;
+  }
+  return '—';
+}
+
+/** safe toFixed — returns '—' when value is null/undefined/NaN */
+function safeFixed(n: number | null | undefined, decimals = 2): string {
+  if (n == null || isNaN(n)) return '—';
+  return n.toFixed(decimals);
+}
+
+/** eta_scenarios use eta_hamburg as the date field */
+function scenarioEta(s: EtaScenario): string {
+  return s.eta_hamburg ?? s.eta ?? '';
+}
+
+type TabId = 'overview' | 'alerts' | 'decisions' | 'execution' | 'outcomes';
+
+// ---------------------------------------------------------------------------
+// Shared sub-components
+// ---------------------------------------------------------------------------
+
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <span style={{ fontSize: 11, padding: '2px 8px', background: bg, color: 'white', borderRadius: 4, fontWeight: 700 }}>
-      {severity}
-    </span>
+    <div style={{
+      borderRadius: 12,
+      padding: 20,
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+    }}>
+      <div style={{ marginBottom: 12 }}>
+        <h3 style={{
+          fontSize: 10,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: 'var(--muted-foreground)',
+          margin: 0,
+        }}>
+          {title}
+        </h3>
+        {subtitle && (
+          <p style={{ fontSize: 11, color: 'var(--muted-foreground)', opacity: 0.7, margin: '2px 0 0' }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
   );
 }
 
-function InfoRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function DetailRow({ label, value, variant }: {
+  label: string; value: string; variant?: 'critical' | 'high' | 'accent';
+}) {
+  const color =
+    variant === 'critical' ? 'var(--status-critical)' :
+    variant === 'high'     ? 'var(--status-high)'     :
+    variant === 'accent'   ? 'var(--accent)'           :
+    'var(--foreground)';
   return (
-    <>
-      <dt style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>{label}</dt>
-      <dd style={{ margin: 0, fontSize: 12, color: highlight ? 'var(--critical)' : 'var(--text-primary)', fontWeight: highlight ? 700 : 500 }}>
-        {value}
-      </dd>
-    </>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+      <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, textAlign: 'right', color }}>{value}</span>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Tab content components
+// KPI cell used in the persistent header
+// ---------------------------------------------------------------------------
+
+function KPI({ label, value, sub, variant }: {
+  label: string; value: string; sub: string; variant?: 'critical' | 'high' | 'accent';
+}) {
+  const color =
+    variant === 'critical' ? 'var(--status-critical)' :
+    variant === 'high'     ? 'var(--status-high)'     :
+    variant === 'accent'   ? 'var(--accent)'           :
+    'var(--foreground)';
+  return (
+    <div style={{ textAlign: 'right' }}>
+      <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted-foreground)', margin: 0 }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 13, fontWeight: 700, color, margin: '2px 0 0' }}>{value}</p>
+      <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: 0 }}>{sub}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Persistent shipment header — Figma pattern
+// ---------------------------------------------------------------------------
+
+function ShipmentHeader({ data, shipmentId, activeTab, onTabChange }: {
+  data: ShipmentData;
+  shipmentId: string;
+  activeTab: TabId;
+  onTabChange: (id: TabId) => void;
+}) {
+  const delay = data.schedule.delay_days_expected ?? 0;
+  const etaRevised = data.schedule.revised_eta_hamburg;
+  const route = data.route.current_leg
+    ?? `${data.route.origin_port ?? '?'} → ${data.route.destination_port ?? '?'}`;
+
+  return (
+    <div style={{
+      flexShrink: 0,
+      padding: '16px 20px',
+      borderBottom: '1px solid var(--border)',
+      background: 'var(--card)',
+      borderColor: 'var(--border)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        {/* Left: icon + identity + meta row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          {/* Ship icon with critical bg */}
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            background: 'var(--status-critical-bg)',
+          }}>
+            <Ship size={18} color="var(--status-critical)" />
+          </div>
+
+          <div>
+            {/* Status pills row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              <span style={{
+                fontSize: 10,
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 700,
+                color: 'var(--muted-foreground)',
+              }}>
+                {data.shipment_id}
+              </span>
+              <span style={{
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 10,
+                fontWeight: 700,
+                background: 'var(--status-critical-bg)',
+                color: 'var(--status-critical)',
+              }}>
+                DISRUPTED
+              </span>
+              <span style={{
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 10,
+                fontWeight: 700,
+                background: 'rgba(43,179,168,0.12)',
+                color: 'var(--accent)',
+              }}>
+                {data.lifecycle_state.replace(/_/g, ' ')}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                <Radio size={10} color="var(--status-success)" />
+                Live
+              </div>
+            </div>
+
+            {/* Shipment name */}
+            <h2 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px', color: 'var(--foreground)' }}>
+              {data.shipment_name}
+            </h2>
+
+            {/* Detail meta strip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: 'var(--muted-foreground)', flexWrap: 'wrap' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Ship size={11} /> {data.vessel.name}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Package size={11} /> {data.origin.supplier}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={11} /> {route}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Package size={11} /> {data.material.quantity} {data.material.unit}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: KPI cells + CTA */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+          <KPI
+            label="Original ETA"
+            value={formatDateShort(data.schedule.original_eta_hamburg) || '28 May'}
+            sub="baseline"
+          />
+          <KPI
+            label="Current ETA"
+            value={etaRevised ? formatDateShort(etaRevised) : '—'}
+            sub={delay > 0 ? `+${delay}d delay` : 'On time'}
+            variant="critical"
+          />
+          <KPI
+            label="Execution"
+            value="In Transit"
+            sub="Step 5/7 · 65%"
+            variant="accent"
+          />
+          <Link
+            href={`/demo/shipments/${shipmentId}/scenario-analysis`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 16px',
+              borderRadius: 8,
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Scenarios
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Tab row — inside header (Figma pattern: shared border-b) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 16 }}>
+        {([
+          { id: 'overview'  as TabId, label: 'Overview',   Icon: Ship },
+          { id: 'alerts'    as TabId, label: 'Alerts',     Icon: AlertTriangle, badge: 1, badgeVariant: 'critical' as const },
+          { id: 'decisions' as TabId, label: 'Decisions',  Icon: GitFork,       badge: 1, badgeVariant: 'warning'  as const },
+          { id: 'execution' as TabId, label: 'Execution',  Icon: Zap,           badge: 1, badgeVariant: 'success'  as const },
+          { id: 'outcomes'  as TabId, label: 'Outcomes',   Icon: BarChart2 },
+        ] as Array<{ id: TabId; label: string; Icon: React.ElementType; badge?: number; badgeVariant?: 'critical' | 'warning' | 'success' }>)
+          .map(({ id, label, Icon, badge, badgeVariant }) => {
+            const isActive = activeTab === id;
+            const badgeBg =
+              badgeVariant === 'critical' ? 'var(--status-critical-bg)' :
+              badgeVariant === 'warning'  ? 'var(--status-high-bg)'     :
+              badgeVariant === 'success'  ? 'rgba(43,179,168,0.12)'     :
+              'var(--secondary)';
+            const badgeColor =
+              badgeVariant === 'critical' ? 'var(--status-critical)' :
+              badgeVariant === 'warning'  ? 'var(--status-high)'     :
+              badgeVariant === 'success'  ? 'var(--accent)'          :
+              'var(--muted-foreground)';
+            return (
+              <button
+                key={id}
+                onClick={() => onTabChange(id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  fontSize: 13,
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                  background: isActive ? 'var(--background)' : 'transparent',
+                  border: 'none',
+                  borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                  borderRadius: '6px 6px 0 0',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Icon size={13} />
+                {label}
+                {badge !== undefined && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '1px 5px',
+                    borderRadius: 10, background: badgeBg, color: badgeColor,
+                  }}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Overview Tab — shipment details + lifecycle timeline
 // ---------------------------------------------------------------------------
 
 function OverviewTab({ data }: { data: ShipmentData }) {
+  const delay = data.schedule.delay_days_expected ?? 0;
+  const route = data.route.current_leg
+    ?? `${data.route.origin_port ?? '?'} → ${data.route.destination_port ?? '?'}`;
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-      {/* Shipment details */}
-      <div className="card">
-        <div className="card-header"><span className="card-title">Shipment details</span></div>
-        <div className="card-body">
-          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px' }}>
-            <InfoRow label="Shipment ID" value={data.shipment_id} />
-            <InfoRow label="Case ID" value={data.case_id} />
-            <InfoRow label="Material" value={`${data.material.description} (${data.material.material_number})`} />
-            <InfoRow label="Quantity" value={`${data.material.quantity} ${data.material.unit}`} />
-            <InfoRow label="Supplier" value={data.origin.supplier} />
-            <InfoRow label="Origin" value={`${data.origin.port}, ${data.origin.country}`} />
-          </dl>
-        </div>
-      </div>
-
-      {/* Vessel & schedule */}
-      <div className="card">
-        <div className="card-header"><span className="card-title">Vessel & schedule</span></div>
-        <div className="card-body">
-          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px' }}>
-            <InfoRow label="Vessel" value={`${data.vessel.name} (${data.vessel.voyage})`} />
-            <InfoRow label="Route" value={`${data.route.departure_port} → ${data.route.arrival_port}`} />
-            <InfoRow label="Mode" value={data.route.mode} />
-            <InfoRow label="ETD" value={formatDate(data.schedule.etd)} />
-            <InfoRow label="ETA (original)" value={formatDate(data.schedule.eta_original)} />
-            <InfoRow
-              label="ETA (revised)"
-              value={`${formatDate(data.schedule.eta_revised)}${data.schedule.delay_days > 0 ? ` (+${data.schedule.delay_days}d)` : ''}`}
-              highlight={data.schedule.delay_days > 0}
-            />
-          </dl>
-        </div>
-      </div>
-
-      {/* Production context */}
-      <div className="card">
-        <div className="card-header"><span className="card-title">Production context</span></div>
-        <div className="card-body">
-          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px' }}>
-            <InfoRow label="Plant" value={data.production_context.plant} />
-            <InfoRow label="Line" value={data.production_context.production_line} />
-            <InfoRow
-              label="Days to stop"
-              value={`${data.production_context.days_until_production_stop} days`}
-              highlight={data.production_context.days_until_production_stop <= 7}
-            />
-            <InfoRow label="Financial exposure" value={formatEur(data.production_context.total_financial_exposure_eur)} />
-            <InfoRow label="Inventory covers" value={`${data.business_context.inventory_covers_days} days`} />
-          </dl>
-        </div>
-      </div>
-
-      {/* Business context */}
-      <div className="card">
-        <div className="card-header"><span className="card-title">Business context</span></div>
-        <div className="card-body">
-          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 16px' }}>
-            <InfoRow label="Customer" value={data.business_context.customer} />
-            <InfoRow label="Tier" value={data.business_context.relationship_tier} />
-            <InfoRow label="Contract" value={data.business_context.contract_type} />
-            <InfoRow
-              label="Critical material"
-              value={data.business_context.critical_material_flag ? 'Yes' : 'No'}
-              highlight={data.business_context.critical_material_flag}
-            />
-            <InfoRow
-              label="Production stop risk"
-              value={data.business_context.production_stop_risk ? 'Yes — action required' : 'No'}
-              highlight={data.business_context.production_stop_risk}
-            />
-            {data.business_context.production_stop_date_if_no_action && (
-              <InfoRow
-                label="Stop date (no action)"
-                value={formatDate(data.business_context.production_stop_date_if_no_action)}
-                highlight
+    <div style={{ padding: 20, maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Shipment Details */}
+        <Section title="Shipment Details">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <DetailRow label="Vessel"       value={data.vessel.name} />
+            <DetailRow label="Supplier"     value={data.origin.supplier} />
+            <DetailRow label="Origin"       value={data.origin.location ?? route.split(' → ')[0] ?? '—'} />
+            <DetailRow label="Destination"  value={data.route.destination_port ?? '—'} />
+            <DetailRow label="Volume"       value={`${data.material.quantity} ${data.material.unit} ${data.material.name}`} />
+            {data.schedule.original_eta_hamburg && (
+              <DetailRow label="Original ETA" value={formatDate(data.schedule.original_eta_hamburg)} />
+            )}
+            {data.schedule.revised_eta_hamburg && (
+              <DetailRow
+                label="Current ETA"
+                value={`${formatDate(data.schedule.revised_eta_hamburg)}${delay > 0 ? ` (+${delay}d)` : ''}`}
+                variant="critical"
               />
             )}
-          </dl>
+            <DetailRow label="ERP Reference" value={`SAP PO-2024-HH-0042`} />
+          </div>
+        </Section>
+
+        {/* Disruption Snapshot */}
+        <Section title="Disruption Snapshot" subtitle="Current risk status">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <DetailRow label="Event"           value={data.alert.alert_type.replace(/_/g, ' ')} variant="critical" />
+            {delay > 0 && <DetailRow label="ETA Impact"     value={`+${delay} days`}                    variant="critical" />}
+            <DetailRow label="Production Risk" value={`Stop in ${data.production_context.days_until_production_stop}d without action`} variant="critical" />
+            <DetailRow label="Financial Exposure" value={formatEur(data.production_context.total_financial_exposure_eur)} variant="critical" />
+            <DetailRow label="Decision"        value="Alternative Supplier · Approved" variant="accent" />
+            <DetailRow label="Execution"       value="In Transit · 65% complete"       variant="accent" />
+            <DetailRow label="Customer"        value={`${data.business_context.customer} (${data.business_context.relationship_tier})`} />
+          </div>
+        </Section>
+      </div>
+
+      {/* Lifecycle Timeline */}
+      <Section title="Shipment Lifecycle" subtitle="Complete journey from creation to outcome">
+        <div style={{ marginTop: 16, position: 'relative' }}>
+          {/* Connector line */}
+          <div style={{
+            position: 'absolute',
+            top: 20,
+            left: 20,
+            right: 20,
+            height: 1,
+            background: 'var(--border)',
+          }} />
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, position: 'relative' }}>
+            {lifecycleStages.map((stage, i) => {
+              const dotColor =
+                stage.active ? 'var(--accent)' :
+                stage.done   ? 'var(--secondary)' :
+                'var(--background)';
+              const dotBorder =
+                stage.active ? 'var(--accent)' :
+                stage.done   ? 'var(--border)' :
+                'var(--border)';
+
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  {/* Circle */}
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1,
+                    border: `2px solid ${dotBorder}`,
+                    background: dotColor,
+                    boxShadow: stage.active ? '0 0 0 4px rgba(43,179,168,0.2)' : 'none',
+                  }}>
+                    {stage.done
+                      ? <CheckCircle size={14} color="var(--muted-foreground)" />
+                      : stage.active
+                      ? <Zap size={14} color="white" />
+                      : <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
+                    }
+                  </div>
+
+                  {/* Labels */}
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      color: stage.active ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      margin: 0,
+                    }}>
+                      {stage.label}
+                    </p>
+                    <p style={{
+                      fontSize: 9,
+                      color: 'var(--muted-foreground)',
+                      opacity: 0.7,
+                      marginTop: 2,
+                      lineHeight: 1.3,
+                    }}>
+                      {stage.sublabel}
+                    </p>
+                    <span style={{
+                      display: 'inline-block',
+                      marginTop: 4,
+                      fontSize: 8,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      padding: '1px 5px',
+                      borderRadius: 3,
+                      background: stage.active ? 'rgba(43,179,168,0.12)' : 'var(--secondary)',
+                      color: stage.active ? 'var(--accent)' : 'var(--muted-foreground)',
+                    }}>
+                      {stage.time}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Alerts Tab
+// ---------------------------------------------------------------------------
+
+function AlertsTab({ data, shipmentId }: { data: ShipmentData; shipmentId: string }) {
+  return (
+    <div style={{ padding: 20, maxWidth: 750, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{
+        borderRadius: 10,
+        padding: 20,
+        background: 'var(--card)',
+        border: '1px solid var(--status-critical-border)',
+        borderLeft: '3px solid var(--status-critical)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <AlertTriangle size={18} color="var(--status-critical)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)' }}>
+                  {data.alert.alert_id}
+                </span>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 10,
+                  background: 'var(--status-critical-bg)',
+                  color: 'var(--status-critical)',
+                }}>
+                  {data.alert.severity}
+                </span>
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>
+                {data.alert.alert_type.replace(/_/g, ' — ')}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+                {data.alert.summary}
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>
+              {new Date(data.alert.detected_at).toLocaleString('de-DE')}
+            </p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--status-critical)', margin: '4px 0 0' }}>
+              {formatEur(data.production_context.total_financial_exposure_eur)}
+            </p>
+          </div>
+        </div>
+
+        {/* Risk signals */}
+        {data.alert.risk_signals.length > 0 && (
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 8px' }}>
+              Risk Signals
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {data.alert.risk_signals.map((signal, i) => (
+                <div key={signal.signal_id ?? i} style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  background: 'var(--status-critical-bg)',
+                  border: '1px solid var(--status-critical-border)',
+                  fontSize: 12,
+                  color: 'var(--foreground)',
+                }}>
+                  <span style={{ fontWeight: 600, color: 'var(--status-critical)', marginRight: 6 }}>
+                    {signal.severity}
+                  </span>
+                  {signal.description}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CTA buttons */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link
+            href={`/demo/shipments/${shipmentId}/scenario-analysis`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 6,
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            View Scenarios <ArrowRight size={13} />
+          </Link>
+          <Link
+            href={`/demo/shipments/${shipmentId}/decision-room`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 6,
+              background: 'transparent',
+              color: 'var(--foreground)',
+              fontSize: 12,
+              fontWeight: 500,
+              border: '1px solid var(--border)',
+              textDecoration: 'none',
+            }}
+          >
+            Decision Room
+          </Link>
+        </div>
+      </div>
+
+      {/* ETA Prediction */}
+      {data.prediction.eta_scenarios.length > 0 && (
+        <Section title="ETA Prediction">
+          <div style={{ marginTop: 12, display: 'flex', gap: 24, marginBottom: 16 }}>
+            <div>
+              <p style={{ fontSize: 32, fontWeight: 700, color: 'var(--status-critical)', lineHeight: 1, margin: 0 }}>
+                {safeDelayPct(data.prediction.delay_probability)}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>delay probability</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 32, fontWeight: 700, color: 'var(--foreground)', lineHeight: 1, margin: 0 }}>
+                {safeFixed(data.prediction.confidence_score * 100, 0)}%
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>model confidence</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {data.prediction.eta_scenarios.map((s, i) => (
+              <div key={s.scenario_id ?? s.label ?? i} style={{
+                padding: '12px 14px',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                background: 'var(--secondary)',
+              }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', margin: '0 0 4px' }}>
+                  {s.label}
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>
+                  {formatDate(scenarioEta(s))}
+                </p>
+                <p style={{ fontSize: 12, color: s.delay_days > 0 ? 'var(--status-critical)' : '#22c55e', margin: '2px 0 0' }}>
+                  {s.delay_days > 0 ? `+${s.delay_days}d delay` : 'On time'}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0' }}>
+                  {Math.round(s.probability * 100)}% probability
+                </p>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Decisions Tab — Figma pattern (enriched decision card)
+// ---------------------------------------------------------------------------
+
+function DecisionsTab({ shipmentId }: { shipmentId: string }) {
+  const dec = demoDecision;
+  return (
+    <div style={{ padding: 20, maxWidth: 750, margin: '0 auto' }}>
+      <div style={{
+        borderRadius: 10,
+        overflow: 'hidden',
+        border: '1px solid rgba(43,179,168,0.25)',
+        borderLeft: '3px solid var(--accent)',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          background: 'rgba(43,179,168,0.04)',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--muted-foreground)' }}>
+                {dec.id}
+              </span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 10,
+                background: 'var(--accent)',
+                color: '#fff',
+              }}>
+                RECOMMENDED BY DENKKERN
+              </span>
+            </div>
+            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>{dec.action}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+              {dec.date} · Decision owner: {dec.owner}
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent)', margin: 0 }}>{dec.score}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>score · {dec.confidence}% conf.</p>
+          </div>
+        </div>
+
+        {/* Detail body */}
+        <div style={{ padding: '16px 20px', background: 'var(--card)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 4px' }}>Chosen Action</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', margin: 0 }}>{dec.actionLabel}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 4px' }}>Cost Authorised</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>{dec.cost}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 4px' }}>Decision Date</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>{dec.date.split(' · ')[0]}</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Approval Status</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <CheckCircle size={13} color="var(--status-success)" />
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--status-success)' }}>{dec.approvalStatus}</span>
+              </div>
+              <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
+                {dec.approvedBy} · {dec.approvedAt.split(' · ')[1]}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Execution Status</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Zap size={13} color="var(--accent)" />
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{dec.executionStatus}</span>
+              </div>
+              <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '3px 0 0' }}>Step 5/7 · In Transit</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Rules Applied</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {dec.rules.map((r, i) => (
+                  <p key={i} style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: 0 }}>{r}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)', margin: '0 0 6px' }}>
+              Expected Outcome
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--foreground)', margin: 0 }}>{dec.expectedOutcome}</p>
+          </div>
+
+          <Link
+            href={`/demo/shipments/${shipmentId}/decision-room`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '8px 14px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              color: 'var(--foreground)',
+              textDecoration: 'none',
+              width: 'fit-content',
+            }}
+          >
+            Open Decision Room <ArrowRight size={13} />
+          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-function AlertsTab({ data }: { data: ShipmentData }) {
+// ---------------------------------------------------------------------------
+// Execution Tab — progress summary + checklist
+// ---------------------------------------------------------------------------
+
+function ExecutionTab({ shipmentId }: { shipmentId: string }) {
+  const done  = executionSteps.filter((s) => s.status === 'done').length;
+  const total = executionSteps.length;
+  const progress = Math.round((done / total) * 100);
+
   return (
-    <>
-      {/* Alert card */}
-      <div className="card" style={{ marginBottom: 16, borderLeft: '4px solid var(--critical)' }}>
-        <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="card-title">{data.alert.alert_type.replace(/_/g, ' ')}</span>
-          <SeverityBadge severity={data.alert.severity} />
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-            {data.alert.alert_id}
-          </span>
+    <div style={{ padding: 20, maxWidth: 750, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Progress summary card */}
+      <div style={{
+        borderRadius: 10,
+        padding: 20,
+        background: 'rgba(43,179,168,0.06)',
+        border: '1px solid rgba(43,179,168,0.25)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent)', margin: 0 }}>
+              Execution in Progress
+            </p>
+            <p style={{ fontSize: 14, fontWeight: 600, margin: '4px 0 0', color: 'var(--foreground)' }}>
+              Thyssenkrupp Duisburg → Hamburg Maritime Manufacturing
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent)', margin: 0 }}>{progress}%</p>
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{done}/{total} steps</p>
+          </div>
         </div>
-        <div className="card-body">
-          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', margin: '0 0 12px' }}>
-            {data.alert.summary}
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
-            Detected: {new Date(data.alert.detected_at).toLocaleString('de-DE')}
-          </p>
+
+        {/* Progress bar */}
+        <div style={{ height: 8, borderRadius: 4, background: 'var(--secondary)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: 4, width: `${progress}%`, background: 'var(--accent)', transition: 'width 0.3s' }} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted-foreground)' }}>
+          <span>Decision approved: 26 May 15:47</span>
+          <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>ETA: 27 May 18:00 UTC</span>
         </div>
       </div>
 
-      {/* Risk signals */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><span className="card-title">Risk signals</span></div>
-        <div className="card-body">
-          {data.alert.risk_signals.map((signal, i) => (
-            <div key={i} style={{
-              padding: '10px 12px', marginBottom: 6,
-              background: 'rgba(239,68,68,0.06)',
-              border: '1px solid rgba(239,68,68,0.15)',
-              borderRadius: 6, fontSize: 13, color: 'var(--text-primary)',
-            }}>
-              ⚡ {signal}
+      {/* Execution checklist */}
+      <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <div style={{
+          padding: '10px 16px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--secondary)',
+        }}>
+          <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted-foreground)', margin: 0 }}>
+            Execution Checklist
+          </p>
+        </div>
+        <div style={{ background: 'var(--card)' }}>
+          {executionSteps.map((step, i) => (
+            <div
+              key={step.id}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 14,
+                padding: '14px 16px',
+                borderBottom: i < executionSteps.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              {/* Status circle */}
+              <div style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                background:
+                  step.status === 'done'    ? 'var(--status-success-bg)' :
+                  step.status === 'active'  ? 'rgba(43,179,168,0.12)' :
+                  'var(--secondary)',
+              }}>
+                {step.status === 'done'
+                  ? <CheckCircle size={14} color="var(--status-success)" />
+                  : step.status === 'active'
+                  ? <Zap size={14} color="var(--accent)" />
+                  : <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)' }}>{i + 1}</span>
+                }
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    margin: 0,
+                    color: step.status === 'pending' ? 'var(--muted-foreground)' : 'var(--foreground)',
+                    opacity: step.status === 'pending' ? 0.5 : 1,
+                  }}>
+                    {step.label}
+                  </p>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '2px 7px',
+                    borderRadius: 10,
+                    flexShrink: 0,
+                    marginLeft: 10,
+                    background:
+                      step.status === 'done'   ? 'var(--status-success-bg)' :
+                      step.status === 'active' ? 'rgba(43,179,168,0.12)'    :
+                      'var(--secondary)',
+                    color:
+                      step.status === 'done'   ? 'var(--status-success)' :
+                      step.status === 'active' ? 'var(--accent)'         :
+                      'var(--muted-foreground)',
+                  }}>
+                    {step.status === 'done' ? 'DONE' : step.status === 'active' ? 'ACTIVE' : 'PENDING'}
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: 11,
+                  color: 'var(--muted-foreground)',
+                  margin: '3px 0 0',
+                  opacity: step.status === 'pending' ? 0.5 : 1,
+                }}>
+                  {step.detail}
+                </p>
+                <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', opacity: 0.6, margin: '3px 0 0' }}>
+                  {step.time}
+                </p>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Prediction */}
-      <div className="card">
-        <div className="card-header"><span className="card-title">ETA prediction</span></div>
-        <div className="card-body">
-          <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--critical)' }}>
-                {Math.round(data.prediction.delay_probability * 100)}%
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>delay probability</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)' }}>
-                {Math.round(data.prediction.confidence_score * 100)}%
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>model confidence</div>
-            </div>
-          </div>
-
-          {/* ETA scenarios */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {data.prediction.eta_scenarios.map((s) => (
-              <div key={s.label} style={{
-                padding: '12px 14px', border: '1px solid var(--border)',
-                borderRadius: 6, background: 'var(--surface)',
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
-                  {s.label}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {formatDate(s.eta)}
-                </div>
-                <div style={{ fontSize: 12, color: s.delay_days > 0 ? 'var(--critical)' : '#22c55e' }}>
-                  {s.delay_days > 0 ? `+${s.delay_days}d delay` : 'On time'}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {Math.round(s.probability * 100)}% probability
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Risk drivers */}
-          {data.prediction.risk_drivers?.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                Risk drivers
-              </div>
-              <ul style={{ margin: 0, padding: '0 0 0 16px', fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {data.prediction.risk_drivers.map((d, i) => <li key={i}>{d}</li>)}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+      {/* Execution Validation CTA — Figma pattern */}
+      <Link
+        href={`/demo/shipments/${shipmentId}/execution-validation`}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: '12px 20px',
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 500,
+          border: '1px solid var(--border)',
+          color: 'var(--foreground)',
+          textDecoration: 'none',
+          background: 'transparent',
+          transition: 'background 0.15s',
+        }}
+      >
+        Open Execution Validation
+        <ArrowRight size={14} />
+      </Link>
+    </div>
   );
 }
 
-function DecisionsTab({ data }: { data: ShipmentData }) {
-  return (
-    <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><span className="card-title">Decision workflow</span></div>
-        <div className="card-body">
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-            Lena has analyzed this disruption and ranked available response options.
-            Review the scenario analysis to understand trade-offs, then proceed to the Decision Room to approve an action.
-          </p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Link href={`/demo/shipments/${data.shipment_id}/scenario-analysis`} className="btn btn-secondary">
-              Scenario analysis →
-            </Link>
-            <Link href={`/demo/shipments/${data.shipment_id}/decision-room`} className="btn btn-primary">
-              Decision Room →
-            </Link>
-          </div>
-        </div>
-      </div>
-      <div className="card">
-        <div className="card-header"><span className="card-title">Approval</span></div>
-        <div className="card-body">
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-            Once a decision is reached, it must be formally approved before execution can begin.
-          </p>
-          <Link href={`/demo/shipments/${data.shipment_id}/approval`} className="btn btn-secondary">
-            Approval screen →
-          </Link>
-        </div>
-      </div>
-    </>
-  );
-}
+// ---------------------------------------------------------------------------
+// Outcomes Tab — full Figma pattern
+// ---------------------------------------------------------------------------
 
-function ExecutionTab({ data }: { data: ShipmentData }) {
+function ActualCard({ label, projected, actual, delta, positive, Icon }: {
+  label: string; projected: string; actual: string; delta: string; positive: boolean;
+  Icon: React.ElementType;
+}) {
   return (
-    <div className="card">
-      <div className="card-header"><span className="card-title">Execution validation</span></div>
-      <div className="card-body">
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-          Before execution begins, all blocking checklist items must be confirmed.
-          Review and confirm the pre-execution checklist here.
-        </p>
-        <Link href={`/demo/shipments/${data.shipment_id}/execution-validation`} className="btn btn-primary">
-          Execution validation →
-        </Link>
+    <div style={{ borderRadius: 8, padding: 12, background: 'var(--card)', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+        <Icon size={13} /> {label}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+          <span style={{ color: 'var(--muted-foreground)' }}>Projected</span>
+          <span style={{ color: 'var(--muted-foreground)' }}>{projected}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+          <span style={{ color: 'var(--muted-foreground)' }}>Actual</span>
+          <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>{actual}</span>
+        </div>
+      </div>
+      <div style={{
+        padding: '4px 8px',
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 600,
+        textAlign: 'center',
+        background: positive ? 'var(--status-success-bg)' : 'var(--status-critical-bg)',
+        color: positive ? 'var(--status-success)' : 'var(--status-critical)',
+      }}>
+        {delta}
       </div>
     </div>
   );
 }
 
-function OutcomesTab({ data }: { data: ShipmentData }) {
+function OutcomesTab({ shipmentId }: { shipmentId: string }) {
+  const o = demoOutcome;
   return (
-    <div className="card">
-      <div className="card-header"><span className="card-title">Outcome review</span></div>
-      <div className="card-body">
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-          Compare projected vs. actual outcome, confirm the result, and capture lessons learned.
-        </p>
-        <Link href={`/demo/shipments/${data.shipment_id}/outcome`} className="btn btn-primary">
-          Outcome review →
-        </Link>
+    <div style={{ padding: 20, maxWidth: 750, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Closed banner */}
+      <div style={{
+        borderRadius: 10,
+        padding: 20,
+        background: 'var(--status-success-bg)',
+        border: '1px solid var(--status-success-border)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--status-success)',
+          }}>
+            <CheckCircle size={14} color="white" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--status-success)', margin: 0 }}>
+              Outcome: Closed — Successful
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0' }}>
+              {o.id} · Closed {o.closedAt}
+            </p>
+          </div>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: 10,
+            background: 'var(--status-success)',
+            color: '#fff',
+          }}>
+            CLOSED
+          </span>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--foreground)', margin: 0 }}>{o.summary}</p>
       </div>
+
+      {/* Results grid */}
+      <Section title="Final Results" subtitle="Projected vs actual — decision closed">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
+          <ActualCard label="Cost Incurred"      projected={o.cost.projected}    actual={o.cost.actual}    delta={o.cost.delta}    positive={o.cost.positive}    Icon={TrendingDown} />
+          <ActualCard label="Delivery Delay"     projected={o.delay.projected}   actual={o.delay.actual}   delta={o.delay.delta}   positive={o.delay.positive}   Icon={Clock} />
+          <ActualCard label="Production Downtime" projected={o.downtime.projected} actual={o.downtime.actual} delta={o.downtime.delta} positive={o.downtime.positive} Icon={Zap} />
+          <div style={{
+            borderRadius: 8,
+            padding: 12,
+            background: 'var(--status-success-bg)',
+            border: '1px solid var(--status-success-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+              <TrendingUp size={13} /> Exposure Avoided
+            </div>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--status-success)', margin: 0 }}>{o.exposureAvoided}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>vs. €750K no-action scenario</p>
+          </div>
+        </div>
+      </Section>
+
+      {/* Prediction accuracy */}
+      <Section title="DenkKern Prediction Accuracy">
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+            <span style={{ fontSize: 36, fontWeight: 700, color: 'var(--accent)', lineHeight: 1 }}>
+              {o.predictionAccuracy}%
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingBottom: 4 }}>accuracy</span>
+            <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'var(--secondary)', overflow: 'hidden', marginBottom: 4 }}>
+              <div style={{ height: '100%', borderRadius: 4, width: `${o.predictionAccuracy}%`, background: 'var(--accent)' }} />
+            </div>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{o.modelNote}</p>
+        </div>
+      </Section>
+
+      {/* Lessons Learned */}
+      <Section title="Lessons Learned">
+        <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {o.lessons.map((lesson, i) => (
+            <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <span style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 700,
+                flexShrink: 0,
+                marginTop: 1,
+                background: 'var(--secondary)',
+                color: 'var(--muted-foreground)',
+              }}>
+                {i + 1}
+              </span>
+              <p style={{ fontSize: 12, color: 'var(--foreground)', margin: 0, lineHeight: 1.5 }}>{lesson}</p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Link
+        href={`/demo/shipments/${shipmentId}/outcome`}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 12,
+          fontWeight: 500,
+          padding: '8px 14px',
+          borderRadius: 6,
+          border: '1px solid var(--border)',
+          color: 'var(--foreground)',
+          textDecoration: 'none',
+          width: 'fit-content',
+        }}
+      >
+        Full Outcome Report <ArrowRight size={13} />
+      </Link>
     </div>
   );
 }
@@ -391,9 +1285,9 @@ export default function ShipmentWorkspacePage() {
   const params = useParams<{ shipmentId: string }>();
   const shipmentId = params.shipmentId;
 
-  const [data, setData] = useState<ShipmentData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [data, setData]           = useState<ShipmentData | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   useEffect(() => {
@@ -434,85 +1328,18 @@ export default function ShipmentWorkspacePage() {
   if (!data) return null;
 
   return (
-    <>
-      {/* Alert banner */}
-      <div style={{
-        padding: '12px 20px',
-        background: data.alert.severity === 'CRITICAL' ? 'rgba(239,68,68,0.08)' : 'rgba(249,115,22,0.08)',
-        border: `1px solid ${data.alert.severity === 'CRITICAL' ? 'rgba(239,68,68,0.25)' : 'rgba(249,115,22,0.25)'}`,
-        borderRadius: 8,
-        marginBottom: 20,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}>
-        <SeverityBadge severity={data.alert.severity} />
-        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500, flex: 1 }}>
-          {data.alert.summary}
-        </span>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-          {new Date(data.alert.detected_at).toLocaleString('de-DE')}
-        </span>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', margin: '-20px' }}>
+      {/* Persistent header — tabs live inside (Figma pattern) */}
+      <ShipmentHeader data={data} shipmentId={shipmentId} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Page header */}
-      <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 0 }}>
-        <div>
-          <h1 className="page-title">{data.shipment_name}</h1>
-          <p className="page-subtitle">
-            {data.material.description} · {data.vessel.name} ·{' '}
-            {data.route.departure_port} → {data.route.arrival_port}
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <span style={{
-            fontSize: 11, padding: '3px 10px',
-            background: 'var(--surface-secondary, rgba(0,0,0,.06))',
-            borderRadius: 4, color: 'var(--text-secondary)',
-          }}>
-            {data.lifecycle_state.replace(/_/g, ' ')}
-          </span>
-          <Link href="/demo/shipments" style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>
-            ← Portfolio
-          </Link>
-        </div>
+      {/* Scrollable content area */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {activeTab === 'overview'   && <OverviewTab  data={data} />}
+        {activeTab === 'alerts'     && <AlertsTab    data={data} shipmentId={shipmentId} />}
+        {activeTab === 'decisions'  && <DecisionsTab shipmentId={shipmentId} />}
+        {activeTab === 'execution'  && <ExecutionTab shipmentId={shipmentId} />}
+        {activeTab === 'outcomes'   && <OutcomesTab  shipmentId={shipmentId} />}
       </div>
-
-      {/* Tab bar */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '2px solid var(--border)',
-        marginBottom: 20,
-        gap: 0,
-      }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '10px 20px',
-              fontSize: 13,
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab.id ? '2px solid var(--text-primary)' : '2px solid transparent',
-              marginBottom: -2,
-              cursor: 'pointer',
-              transition: 'color 0.15s',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {activeTab === 'overview'   && <OverviewTab data={data} />}
-      {activeTab === 'alerts'     && <AlertsTab data={data} />}
-      {activeTab === 'decisions'  && <DecisionsTab data={data} />}
-      {activeTab === 'execution'  && <ExecutionTab data={data} />}
-      {activeTab === 'outcomes'   && <OutcomesTab data={data} />}
-    </>
+    </div>
   );
 }

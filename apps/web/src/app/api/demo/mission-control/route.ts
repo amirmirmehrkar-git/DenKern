@@ -24,7 +24,7 @@ export async function GET() {
     const engine = loadEngine();
 
     const { lena_action_queue } = engine.derived_views;
-    const { recommendation, approval_routing } = engine.engine_output;
+    const { recommendation } = engine.engine_output;
     const { production_context } = engine.shipment_context;
 
     const response = {

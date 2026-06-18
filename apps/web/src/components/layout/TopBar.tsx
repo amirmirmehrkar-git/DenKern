@@ -17,7 +17,7 @@
  */
 
 import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 /* ── Breadcrumb derivation ────────────────────────────────────────────── */
 
@@ -51,10 +51,10 @@ function useBreadcrumb(pathname: string): { label: string; full: string } {
       .filter(Boolean) as string[];
 
     if (labelSegments.length === 0) return { label: 'DenkKern', full: 'DenkKern' };
-    if (labelSegments.length === 1) return { label: labelSegments[0], full: labelSegments[0] };
+    if (labelSegments.length === 1) return { label: labelSegments[0] ?? 'DenkKern', full: labelSegments[0] ?? 'DenkKern' };
 
     // Compose breadcrumb: first + last meaningful segments
-    const label = labelSegments[labelSegments.length - 1];
+    const label = labelSegments[labelSegments.length - 1] ?? 'DenkKern';
     const full = labelSegments.join(' / ');
     return { label, full };
   }, [pathname]);
@@ -62,16 +62,34 @@ function useBreadcrumb(pathname: string): { label: string; full: string } {
 
 /* ── Timestamp ────────────────────────────────────────────────────────── */
 
-function useTimestamp() {
-  return useMemo(() => {
-    const now = new Date();
-    return now.toLocaleTimeString('en-DE', {
+function formatCET(): string {
+  return (
+    new Date().toLocaleTimeString('en-DE', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
       timeZone: 'Europe/Berlin',
-    }) + ' CET';
-  }, []); // Static per render — updates on navigation
+    }) + ' CET'
+  );
+}
+
+/**
+ * Returns current CET time, updated every minute.
+ * Initialises to '' on the server (avoids SSR/hydration mismatch).
+ */
+function useTimestamp() {
+  const [ts, setTs] = useState('');
+
+  useEffect(() => {
+    // Set immediately after mount (client only)
+    setTs(formatCET());
+
+    // Tick every 60 s so the display stays current
+    const id = setInterval(() => setTs(formatCET()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return ts;
 }
 
 /* ── TopBar component ─────────────────────────────────────────────────── */
