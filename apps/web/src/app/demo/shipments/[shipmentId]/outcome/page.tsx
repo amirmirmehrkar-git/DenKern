@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { CheckCircle, Star, AlertTriangle, Layers, ThumbsUp, Zap, Flag } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +98,104 @@ function CompareRow({
       <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>{projected}</td>
       <td style={{ padding: '8px 0 8px 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>{actual}</td>
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Static demo data — model accuracy & timeline (no API dependency)
+// ---------------------------------------------------------------------------
+
+const MODEL_ACCURACY_STATS = [
+  { label: 'Recommendation', value: 'Correct', sub: 'Alternative Supplier was optimal', positive: true },
+  { label: 'Cost Prediction', value: '95.9%', sub: '€45K projected, €43.2K actual', positive: true },
+  { label: 'Time Prediction', value: '89%', sub: 'Expected +18h, achieved +16h', positive: true },
+] as const;
+
+const DECISION_TIMELINE = [
+  { icon: AlertTriangle, label: 'Alert detected', time: '15 May 2024 · 08:14', note: 'AIS speed anomaly — 14.2 kn vs 18.5 baseline' },
+  { icon: Layers,        label: 'Scenarios generated', time: '15 May 2024 · 08:17', note: '4 scenarios ranked by risk/cost in 3 min' },
+  { icon: ThumbsUp,      label: 'Decision made',       time: '15 May 2024 · 09:02', note: 'Alternative Supplier selected by Karen Müller' },
+  { icon: CheckCircle,   label: 'Approval granted',    time: '15 May 2024 · 11:30', note: 'Approved within threshold — no CFO escalation' },
+  { icon: Zap,           label: 'Execution completed', time: '24 May 2024 · 14:00', note: '2,400 MT delivered to Hamburg facility' },
+  { icon: Flag,          label: 'Outcome confirmed',   time: '28 May 2024 · 06:00', note: 'Production resumed on schedule. SLA maintained.' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function ModelAccuracySection() {
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Star size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+        <span className="card-title">DenkKern model accuracy</span>
+      </div>
+      <div className="card-body">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 14 }}>
+          {MODEL_ACCURACY_STATS.map(({ label, value, sub, positive }) => (
+            <div key={label}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: positive ? 'var(--status-success)' : 'var(--status-critical)', marginBottom: 2 }}>
+                {value}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          padding: '10px 12px', borderRadius: 6, fontSize: 12, lineHeight: 1.5,
+          background: 'var(--surface-2)', color: 'var(--text-muted)',
+        }}>
+          This outcome improves DenkKern&apos;s prediction model for future similar disruptions at Hamburg port.
+          Confidence weight for alternative supplier scenarios increased from <strong>85% → 87%</strong>.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DecisionTimeline() {
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header"><span className="card-title">Decision timeline</span></div>
+      <div className="card-body">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {DECISION_TIMELINE.map(({ icon: Icon, label, time, note }, idx) => {
+            const isLast = idx === DECISION_TIMELINE.length - 1;
+            return (
+              <div key={label} style={{ display: 'flex', gap: 12, position: 'relative' }}>
+                {/* connector line */}
+                {!isLast && (
+                  <div style={{
+                    position: 'absolute', left: 11, top: 24, bottom: 0, width: 1,
+                    background: 'var(--border)',
+                  }} />
+                )}
+                {/* icon */}
+                <div style={{
+                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isLast ? 'var(--status-success)' : 'var(--surface-2)',
+                  border: `1px solid ${isLast ? 'var(--status-success)' : 'var(--border)'}`,
+                  zIndex: 1,
+                }}>
+                  <Icon size={12} style={{ color: isLast ? '#fff' : 'var(--text-muted)' }} />
+                </div>
+                {/* content */}
+                <div style={{ paddingBottom: isLast ? 0 : 18, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{time}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>{note}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -200,7 +299,16 @@ export default function OutcomePage() {
         borderRadius: 8,
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <span style={{ fontSize: 28 }}>{outcomeIsPositive ? '✅' : '⚠️'}</span>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: outcomeIsPositive ? 'var(--status-success)' : 'var(--status-critical)',
+        }}>
+          {outcomeIsPositive
+            ? <CheckCircle size={20} style={{ color: '#fff' }} />
+            : <AlertTriangle size={20} style={{ color: '#fff' }} />
+          }
+        </div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
             {data.outcome_label}
@@ -308,6 +416,12 @@ export default function OutcomePage() {
           )}
         </div>
       </div>
+
+      {/* Model accuracy */}
+      <ModelAccuracySection />
+
+      {/* Decision timeline */}
+      <DecisionTimeline />
 
       {/* Lessons learned */}
       {data.lessons_learned.length > 0 && (
