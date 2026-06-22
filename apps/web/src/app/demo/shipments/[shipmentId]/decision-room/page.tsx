@@ -238,18 +238,31 @@ interface NormalizedRule {
   id: string; rule: string; outcome: string; fired: boolean; critical: boolean;
 }
 
+function shortOutcomeLabel(effect: string): string {
+  if (!effect)                             return '';
+  if (effect.includes('disqualif'))        return 'Blocked';
+  if (effect.includes('escalat'))          return 'Escalated';
+  if (effect.includes('block'))            return 'Blocked';
+  if (effect.includes('approv'))           return 'Approval';
+  if (effect.includes('weight') ||
+      effect.includes('increas') ||
+      effect.includes('decreas'))          return 'Modified';
+  return 'Applied';
+}
+
 function normalizeRules(raw: RuleTriggered[] | string[]): NormalizedRule[] {
   return (raw as Array<RuleTriggered | string>).map((r) => {
     if (typeof r === 'string') {
       return { id: r, rule: r, outcome: '', fired: true, critical: false };
     }
-    const effect = r.effect ?? '';
+    const effect  = r.effect ?? '';
+    const critical = effect.includes('disqualif') || effect.includes('escalat') || effect.includes('block');
     return {
       id:       r.rule_id,
       rule:     r.label,
-      outcome:  effect,
+      outcome:  shortOutcomeLabel(effect),
       fired:    r.triggered,
-      critical: effect.includes('disqualif') || effect.includes('escalat') || effect.includes('block'),
+      critical,
     };
   });
 }
@@ -314,14 +327,24 @@ function RuleRow({ rule }: { rule: NormalizedRule }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
       {rule.fired
-        ? <CheckCircle size={13} style={{ color: iconColor, flexShrink: 0, marginTop: 1 }} />
-        : <XCircle size={13} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 1 }} />
+        ? <CheckCircle size={13} style={{ color: iconColor, flexShrink: 0, marginTop: 3 }} />
+        : <XCircle size={13} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 3 }} />
       }
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)', margin: 0, fontFamily: 'var(--font-mono)' }}>
+        {/* ID chip — never wraps */}
+        <span style={{
+          display: 'inline-block',
+          fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-mono)',
+          whiteSpace: 'nowrap', wordBreak: 'normal', overflowWrap: 'normal',
+          letterSpacing: '0.04em',
+          padding: '1px 5px', borderRadius: 3, marginBottom: 3,
+          background: 'var(--surface-2)', border: '1px solid var(--border)',
+          color: iconColor,
+        }}>
           {rule.id}
-        </p>
-        <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '2px 0 0', lineHeight: 1.4 }}>
+        </span>
+        {/* Rule label — wraps normally */}
+        <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0, lineHeight: 1.4, wordBreak: 'normal' as const, overflowWrap: 'break-word' as const }}>
           {rule.rule}
         </p>
       </div>
@@ -331,6 +354,7 @@ function RuleRow({ rule }: { rule: NormalizedRule }) {
           background: rule.critical ? 'var(--status-critical-bg)' : 'var(--status-success-bg)',
           color: rule.critical ? 'var(--status-critical)' : 'var(--status-success)',
           textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+          whiteSpace: 'nowrap' as const,
         }}>
           {rule.outcome.replace(/_/g, ' ')}
         </span>
@@ -483,7 +507,7 @@ export default function DecisionRoomPage() {
   const recScore = recommendedCard ? toScore(recommendedCard.composite_score) : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', margin: '-20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', margin: '-20px' }}>
 
       {/* ── Dark context bar ─────────────────────────────────────────────── */}
       <div style={{
@@ -492,11 +516,11 @@ export default function DecisionRoomPage() {
       }}>
         {/* Back */}
         <Link
-          href={`/demo/shipments/${shipmentId}/scenario-analysis`}
+          href={`/demo/shipments/${shipmentId}`}
           style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontSize: 12 }}
         >
           <ArrowLeft size={14} />
-          Scenarios
+          Shipment
         </Link>
 
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.15)' }} />
@@ -531,10 +555,10 @@ export default function DecisionRoomPage() {
       </div>
 
       {/* ── Three-column body ────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '296px 1fr 288px', overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '296px 1fr 288px', alignItems: 'start' }}>
 
         {/* ── LEFT: Context sections ──────────────────────────────────── */}
-        <aside style={{ borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--card)' }}>
+        <aside style={{ borderRight: '1px solid var(--border)', background: 'var(--card)' }}>
 
           {/* 1 — Risk Scenario */}
           <ContextBlock title="Risk Scenario" subtitle="Most probable outcome">
@@ -631,7 +655,7 @@ export default function DecisionRoomPage() {
         </aside>
 
         {/* ── CENTER: Selectable action cards ─────────────────────────── */}
-        <main style={{ overflowY: 'auto', padding: 24 }}>
+        <main style={{ padding: 24 }}>
 
           {/* Section header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -842,10 +866,10 @@ export default function DecisionRoomPage() {
         {/* ── RIGHT: Recommendation + CTA panel ───────────────────────── */}
         <aside style={{
           borderLeft: '1px solid var(--border)', background: 'var(--card)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          padding: 16, display: 'flex', flexDirection: 'column', gap: 16,
         }}>
-          {/* Scrollable content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Content — flows with page, no internal scroll */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Accent recommendation box */}
             <div style={{
@@ -898,11 +922,11 @@ export default function DecisionRoomPage() {
                         size={13}
                         style={{ color: rule.critical ? 'var(--status-critical)' : 'var(--accent)', flexShrink: 0, marginTop: 1 }}
                       />
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>{rule.rule}</p>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)', margin: 0, wordBreak: 'break-word' as const }}>{rule.rule}</p>
                         {rule.outcome && (
                           <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '1px 0 0' }}>
-                            Effect: {rule.outcome.replace(/_/g, ' ')}
+                            Effect: {rule.outcome}
                           </p>
                         )}
                       </div>
@@ -994,8 +1018,8 @@ export default function DecisionRoomPage() {
             </div>
           </div>
 
-          {/* Fixed CTA panel */}
-          <div style={{ padding: 16, borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* CTA — flows naturally after content */}
+          <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* Primary Approve */}
             <Link
               href={`/demo/shipments/${shipmentId}/approval`}

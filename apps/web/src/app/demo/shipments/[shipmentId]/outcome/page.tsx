@@ -32,13 +32,16 @@ interface ProjectedOutcome {
   production_stop_averted: boolean;
   cost_action_eur: number;
   net_benefit_eur: number;
-  estimated_arrival: string;
-  confidence_pct: number;
+  production_resumes?: string;     // canonical field
+  estimated_arrival?: string;      // legacy fallback
+  confidence_pct?: number;
+  days_saved?: number;
 }
 
 interface ActualOutcome {
   execution_status: string;
-  actual_arrival: string;
+  actual_arrival?: string;         // legacy field name
+  actual_delivery_date?: string;   // canonical JSON field name
   actual_cost_eur: number;
   cost_vs_projection_eur: number;
   cost_variance_reason: string;
@@ -273,6 +276,21 @@ export default function OutcomePage() {
 
   if (!data) return null;
 
+  // Normalize lessons_learned: the canonical JSON stores it as a plain string.
+  // Handle all runtime shapes defensively so .map() never throws.
+  const rawLessons = data.lessons_learned as unknown;
+  const lessons: string[] = Array.isArray(rawLessons)
+    ? (rawLessons as string[])
+    : typeof rawLessons === 'string' && rawLessons
+    ? rawLessons
+        .split(/\.\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => (s.endsWith('.') ? s : `${s}.`))
+    : rawLessons !== null && typeof rawLessons === 'object'
+    ? Object.values(rawLessons as Record<string, string>)
+    : [];
+
   const { comparison: cmp, projected_outcome: proj, actual_outcome: actual } = data;
   const outcomeIsPositive = !actual.production_stopped && actual.customer_commitment_met;
 
@@ -286,7 +304,7 @@ export default function OutcomePage() {
             Case {data.case_id} · Compare projected vs actual results and close the loop
           </p>
         </div>
-        <Link href={`/demo/shipments/${shipmentId}/execution-validation`} className="btn btn-secondary">
+        <Link href={`/demo/shipments/${shipmentId}/execution`} className="btn btn-secondary">
           ← Execution
         </Link>
       </div>
@@ -339,8 +357,8 @@ export default function OutcomePage() {
               {[
                 { label: 'Cost of action', value: formatEur(proj.cost_action_eur) },
                 { label: 'Net benefit', value: formatEur(proj.net_benefit_eur), green: true },
-                { label: 'Estimated arrival', value: formatDate(proj.estimated_arrival) },
-                { label: 'Confidence', value: `${proj.confidence_pct}%` },
+                { label: 'Production resumes', value: formatDate(proj.production_resumes ?? proj.estimated_arrival ?? '') },
+                { label: 'Days saved', value: proj.days_saved != null ? `${proj.days_saved} days` : '—' },
                 { label: 'Production stop averted', value: proj.production_stop_averted ? 'Yes' : 'No', green: proj.production_stop_averted, red: !proj.production_stop_averted },
               ].map(({ label, value, green, red }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
@@ -369,7 +387,7 @@ export default function OutcomePage() {
               {[
                 { label: 'Actual cost', value: formatEur(actual.actual_cost_eur) },
                 { label: 'Cost vs projection', value: `${actual.cost_vs_projection_eur >= 0 ? '+' : ''}${formatEur(actual.cost_vs_projection_eur)}`, red: actual.cost_vs_projection_eur > 0, green: actual.cost_vs_projection_eur < 0 },
-                { label: 'Actual arrival', value: formatDate(actual.actual_arrival) },
+                { label: 'Actual arrival', value: formatDate(actual.actual_delivery_date ?? actual.actual_arrival ?? '') },
                 { label: 'Production stopped', value: actual.production_stopped ? 'Yes' : 'No', red: actual.production_stopped, green: !actual.production_stopped },
                 { label: 'Customer commitment', value: actual.customer_commitment_met ? 'Met ✓' : 'Not met ✗', green: actual.customer_commitment_met, red: !actual.customer_commitment_met },
               ].map(({ label, value, green, red }) => (
@@ -424,18 +442,20 @@ export default function OutcomePage() {
       <DecisionTimeline />
 
       {/* Lessons learned */}
-      {data.lessons_learned.length > 0 && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="card-header"><span className="card-title">Lessons learned</span></div>
-          <div className="card-body">
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-header"><span className="card-title">Lessons learned</span></div>
+        <div className="card-body">
+          {lessons.length > 0 ? (
             <ul style={{ margin: 0, padding: '0 0 0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {data.lessons_learned.map((lesson, i) => (
+              {lessons.map((lesson, i) => (
                 <li key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{lesson}</li>
               ))}
             </ul>
-          </div>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>No lessons recorded yet.</p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Confirm outcome */}
       <div className="card">

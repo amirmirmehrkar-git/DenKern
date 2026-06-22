@@ -127,19 +127,22 @@ function IconSettings() {
 }
 
 /* ── Nav item definitions ─────────────────────────────────────────────────
-   Items 3–7 link to /demo as placeholder until those routes are built.
-   Matches Figma AppLayout.tsx nav order exactly.
+   Alerts / Decisions / Approvals / Execution / Outcomes are not yet built
+   as standalone list views. For Demo Day they deep-link to the active
+   SH-2024-0042 case so no sidebar click produces a 404.
    ──────────────────────────────────────────────────────────────────────── */
 
+const ACTIVE_CASE = 'SH-2024-0042';
+
 const OPERATIONS_NAV = [
-  { label: 'Mission Control', href: '/demo',                    exact: true,  Icon: IconLayoutDashboard },
-  { label: 'Shipments',       href: '/demo/shipments',          exact: false, Icon: IconShip             },
-  { label: 'Alerts',          href: '/demo/alerts',             exact: false, Icon: IconBell             },
-  { label: 'Decisions',       href: '/demo/decisions',          exact: false, Icon: IconGitFork          },
-  { label: 'Approvals',       href: '/demo/approvals',          exact: false, Icon: IconCheckSquare      },
-  { label: 'Execution',       href: '/demo/execution',          exact: false, Icon: IconZap              },
-  { label: 'Outcomes',        href: '/demo/outcomes',           exact: false, Icon: IconBarChart         },
-] as const;
+  { label: 'Mission Control', href: '/demo',                                              exact: true,  Icon: IconLayoutDashboard },
+  { label: 'Shipments',       href: '/demo/shipments',                                   exact: false, Icon: IconShip             },
+  { label: 'Alerts',          href: `/demo/shipments/${ACTIVE_CASE}`,                    exact: false, Icon: IconBell             },
+  { label: 'Decisions',       href: `/demo/shipments/${ACTIVE_CASE}/decision-room`,      exact: false, Icon: IconGitFork          },
+  { label: 'Approvals',       href: `/demo/shipments/${ACTIVE_CASE}/approval`,           exact: false, Icon: IconCheckSquare      },
+  { label: 'Execution',       href: `/demo/shipments/${ACTIVE_CASE}/execution`,          exact: false, Icon: IconZap              },
+  { label: 'Outcomes',        href: `/demo/shipments/${ACTIVE_CASE}/outcome`,            exact: false, Icon: IconBarChart         },
+];
 
 const ORGANISATION_NAV = [
   { label: 'Decision Model',  href: '/demo/decision-model',     exact: false, Icon: IconSlidersHorizontal },

@@ -45,7 +45,8 @@ export async function GET() {
             urgency: lena_action_queue.urgency,
             days_until_production_stop: production_context.days_until_production_stop,
             cta: lena_action_queue.cta,
-            cta_route: engine.derived_views.mission_control.cta_route,
+            // canonical JSON stores a legacy path — rewrite to the correct Next.js route
+            cta_route: `/demo/shipments/${engine.meta.case_id}/decision-room`,
             approval_note: lena_action_queue.note,
           },
         ],
