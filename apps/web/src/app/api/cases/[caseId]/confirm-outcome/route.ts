@@ -39,7 +39,7 @@ import type {
 } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 const VALID_DECISION_QUALITIES: DecisionQuality[] = ['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'POOR'];
@@ -68,7 +68,7 @@ export async function POST(
   req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<ConfirmOutcomeResponse | { error: string; code?: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   // 1. Parse request body
   let body: unknown;
