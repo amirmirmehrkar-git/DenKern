@@ -32,7 +32,7 @@ import type { MockDataAdapter } from '@denkkern/mock';
 import type { OutcomeCheckpoint } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string; checkpointId: string };
+  params: Promise<{ caseId: string; checkpointId: string }>;
 }
 
 interface ConfirmCheckpointResponse {
@@ -44,7 +44,7 @@ export async function POST(
   req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<ConfirmCheckpointResponse | { error: string; code?: string }>> {
-  const { caseId, checkpointId } = params;
+  const { caseId, checkpointId } = await params;
 
   // 1. Parse and validate request body
   let body: unknown;
