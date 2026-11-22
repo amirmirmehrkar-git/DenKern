@@ -79,7 +79,8 @@ export class MockPredictionAdapter implements PredictionAdapterPort {
 
     const { _comment: _, ...seed } = data;
     return normalizeMinimalPrediction(
-      seed as PredictionOutput | PredictionOutputMinimal
+      // The fixture is explicitly mapped to the requested demo shipment.
+      { ...seed, shipment_id: shipmentId } as PredictionOutput | PredictionOutputMinimal
     );
   }
 }
