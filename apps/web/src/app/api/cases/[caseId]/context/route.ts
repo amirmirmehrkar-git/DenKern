@@ -38,7 +38,7 @@ import type { DisruptionContext, ExternalRiskSignal } from '@denkkern/types';
 import type { AgentContext } from '@denkkern/intelligence';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ export async function GET(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<DisruptionContext | { error: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   // ── 1. Load base context ──────────────────────────────────────────────────
   let baseContext: DisruptionContext;
