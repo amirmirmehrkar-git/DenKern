@@ -23,15 +23,15 @@ import { OutcomeTimelineView } from './OutcomeTimelineView.js';
 import type { OutcomeTimeline } from '@denkkern/types';
 
 interface PageProps {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 function mockRoot(): string {
   return process.env['MOCK_ROOT'] ?? process.cwd();
 }
 
-export default function OutcomeTimelinePage({ params }: PageProps) {
-  const { caseId } = params;
+export default async function OutcomeTimelinePage({ params }: PageProps) {
+  const { caseId } = await params;
 
   const timelinePath = join(mockRoot(), 'mock', 'cases', caseId, 'outcome-timeline.json');
   const recordPath   = join(mockRoot(), 'mock', 'cases', caseId, 'decision-record.json');
