@@ -145,18 +145,13 @@ describe('computeHealthStatus', () => {
   });
 
   it('becomes degraded when error rate exceeds 30%', () => {
-    const outcomes = [
-      ...Array.from({ length: 7 }, (_, i) => ({
-        status: 'success' as const,
-        duration_ms: 100,
-        completed_at: `2026-06-04T10:0${i}:00Z`,
-      })),
-      ...Array.from({ length: 3 }, (_, i) => ({
-        status: 'failure' as const,
-        duration_ms: 100,
-        completed_at: `2026-06-04T11:0${i}:00Z`,
-      })),
-    ];
+    // Isolate the rate threshold: three consecutive failures have a separate
+    // unhealthy rule, so failures must be spread across this window.
+    const outcomes = Array.from({ length: 10 }, (_, i) => ({
+      status: [2, 5, 9].includes(i) ? 'failure' as const : 'success' as const,
+      duration_ms: 100,
+      completed_at: `2026-06-04T10:${String(i).padStart(2, '0')}:00Z`,
+    }));
     const status = computeHealthStatus({ agent_name: 'A', outcomes });
     expect(status.level).toBe('degraded');
     expect(status.error_rate).toBeCloseTo(0.3, 5);
