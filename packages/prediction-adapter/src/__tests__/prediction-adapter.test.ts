@@ -25,14 +25,14 @@ import {
   PredictionUnavailableError,
   JamesResponseInvalidError,
 } from '../errors.js';
-import { join } from 'path';
+import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** Absolute path to the monorepo root (two levels above packages/prediction-adapter) */
-const MOCK_ROOT = join(new URL('../../..', import.meta.url).pathname, '..', '..', '..');
+const MOCK_ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 
 /** Minimal mock adapter pointing at CASE-001 seed */
 function mockAdapter(): MockPredictionAdapter {
@@ -257,16 +257,18 @@ describe('C4 — Output is always full PredictionOutput', () => {
   });
 
   it('JamesHTTPAdapter (live path) returns a full PredictionOutput via normalizeMinimalPrediction', async () => {
-    // Simulate a minimal valid-ish James response (the mapper returns placeholder values)
+    // Use the confirmed response contract, not the obsolete sprint-3 placeholder.
     const adapter = buildHttpAdapter({
       fallbackEnabled: false,
       fetchImpl: vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({
-          // Minimal response with one field (passes the non-empty object check)
-          // TODO: replace with real James field names once confirmed
-          placeholder: 'sprint-3-stub',
+          mmsi: '215394000',
+          results: {
+            arrival_time: { mean: '2026-05-31' },
+            eta_prediction: { mean_hours: 72 },
+          },
         }),
       } as Response),
     });
@@ -276,7 +278,7 @@ describe('C4 — Output is always full PredictionOutput', () => {
       required_by: '2026-05-28',
     });
 
-    // Even with placeholder mapper output, normalizeMinimalPrediction must
+    // With a validated mapper input, normalizeMinimalPrediction must
     // produce a full PredictionOutput
     expect(result.eta).toBeDefined();
     expect(result.eta.baseline).toBeDefined();
