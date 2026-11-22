@@ -82,11 +82,11 @@ function useTimestamp() {
 
   useEffect(() => {
     // Set immediately after mount (client only)
-    setTs(formatCET());
+    const initial = setTimeout(() => setTs(formatCET()), 0);
 
     // Tick every 60 s so the display stays current
     const id = setInterval(() => setTs(formatCET()), 60_000);
-    return () => clearInterval(id);
+    return () => { clearTimeout(initial); clearInterval(id); };
   }, []);
 
   return ts;
