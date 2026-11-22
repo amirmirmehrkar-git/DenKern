@@ -15,14 +15,14 @@ import { scenarioStore } from '../../../../../lib/workflow/scenario-store.js';
 import type { ScenarioResult } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 export async function GET(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<ScenarioResult | { error: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   try {
     const result = scenarioStore.get(caseId);
