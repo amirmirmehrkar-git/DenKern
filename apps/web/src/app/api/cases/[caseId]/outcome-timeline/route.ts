@@ -22,14 +22,14 @@ import type { MockDataAdapter } from '@denkkern/mock';
 import type { OutcomeTimeline } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 export async function GET(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<OutcomeTimeline | null | { error: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   try {
     const adapter = getAdapter() as unknown as MockDataAdapter;

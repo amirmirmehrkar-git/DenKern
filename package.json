@@ -14,9 +14,13 @@
   },
   "devDependencies": {
     "turbo": "^2.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "@types/node": "^22",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6"
   },
   "engines": {
-    "node": ">=20.0.0"
-  }
+    "node": ">=22 <25"
+  },
+  "packageManager": "npm@11.19.1"
 }

@@ -23,14 +23,14 @@ function loadEngine() {
 }
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const engine = loadEngine();
@@ -103,7 +103,7 @@ export async function POST(
   req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const engine = loadEngine();

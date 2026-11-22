@@ -174,7 +174,7 @@ function buildDecisionRelevance(
 
 function isRelevantToContext(event: RawWeatherEvent, context: AgentContext): boolean {
   const dest = context.destination_port.toLowerCase();
-  const route = context.route?.toLowerCase() ?? '';
+  const route = context.route?.toLowerCase().replace(/\broute\b/g, '').trim() ?? '';
 
   // Match on destination port
   const portMatch = event.affected_ports.some(
@@ -183,8 +183,11 @@ function isRelevantToContext(event: RawWeatherEvent, context: AgentContext): boo
   if (portMatch) return true;
 
   // Match on route
-  const routeMatch = (event.routes ?? []).some(
-    (r) => route.includes(r.toLowerCase()) || r.toLowerCase().includes(route)
+  const routeMatch = route.length > 0 && (event.routes ?? []).some(
+    (r) => {
+      const candidate = r.toLowerCase().replace(/\broute\b/g, '').trim();
+      return candidate.length > 0 && (route.includes(candidate) || candidate.includes(route));
+    }
   );
   if (routeMatch) return true;
 
@@ -220,7 +223,7 @@ export class WeatherContextAgent implements ExternalRiskAgent {
         : undefined;
 
       return {
-        signal_id:   `WX-${event.event_id}`,
+        signal_id:   event.event_id.startsWith('WX-') ? event.event_id : `WX-${event.event_id}`,
         signal_type: 'WEATHER_CONTEXT' as const,
         severity,
         confidence:  event.confidence ?? 0.6,

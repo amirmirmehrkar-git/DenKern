@@ -8,13 +8,15 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run src",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "build": "tsc -b"
   },
   "devDependencies": {
     "@denkkern/types": "file:../types",
     "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "vitest": "5.1.1",
+    "@types/node": "^22"
   }
 }

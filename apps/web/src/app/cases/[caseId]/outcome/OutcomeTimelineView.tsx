@@ -223,7 +223,7 @@ interface CheckpointCardProps {
 }
 
 function CheckpointCard({
-  checkpoint, caseId, onConfirm, onUnresolved, actionError, isActing
+  checkpoint, onConfirm, onUnresolved, actionError, isActing
 }: CheckpointCardProps) {
   const isTerminal = TERMINAL_STATUSES.includes(checkpoint.status);
   const overdue    = isOverdue(checkpoint.due_at, checkpoint.status);
