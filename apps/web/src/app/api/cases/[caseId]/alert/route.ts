@@ -15,14 +15,14 @@ import { getAdapter } from '../../../../../lib/adapters/index.js';
 import type { AlertEvent } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 export async function GET(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<AlertEvent | { error: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   try {
     const adapter = getAdapter();
