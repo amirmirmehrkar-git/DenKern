@@ -77,3 +77,35 @@ Agents should read [AGENTS.md](AGENTS.md) first for update rules.
 The active strategic rule is:
 
 > Stop refining architecture. Validate customer evidence.
+
+## Application workspace
+
+This repository also contains an application under `apps/web` and shared TypeScript packages under `packages/`.
+Use Node.js 22 and npm with the committed root `package-lock.json`:
+
+```sh
+npm ci
+npm run dev
+npm run type-check
+npm test
+npm run build
+```
+
+The development server defaults to http://localhost:3000. Turbo coordinates workspace tasks.
+Local dependencies use npm-compatible file references. Package scripts are the source of truth for available tasks.
+The knowledge base above describes product intent; it is not evidence that every feature is implemented or production-ready.
+Do not put personal data or unredacted internal/client notes in this public repository.
+Project licensing remains to be selected by the owner.
+
+### Verified maintenance update (AI, 2026-11-22)
+
+The application workspace now uses Next.js 16.4.6, React 19.3.1 and Vitest 5.1.1.
+Dynamic route/page params are awaited for the current Next.js API. npm-compatible workspace references,
+Turbo task ordering and the root lockfile are coordinated. Standard lint replaces the removed next lint command.
+Regression fixes cover empty route matching, normalized weather IDs/route labels, mock shipment identity,
+fixture paths and outdated test setup. Historical CASE-001 evidence uses a fixed fixture date; it is not live operational evidence.
+Outcome confirmation tokens are no longer written to console logs.
+
+CI installs the committed lockfile and runs audit, lint, type checking, unit tests and production build.
+This remains a demo with simulated data. Passing checks do not validate real maritime predictions,
+production access controls or operational freshness. No live API, production deployment or data migration was performed.
