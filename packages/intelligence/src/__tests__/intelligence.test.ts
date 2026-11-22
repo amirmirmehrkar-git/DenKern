@@ -145,7 +145,7 @@ describe('GeopoliticalRiskAgent', () => {
     const criticalAgent = new GeopoliticalRiskAgent([
       {
         event_id:      'TEST-GEO-001',
-        region:        'Test Region',
+        region:        'Hamburg',
         event_type:    'war_risk',
         description:   'Critical war risk event',
         reported_at:   '2026-05-01T00:00:00Z',

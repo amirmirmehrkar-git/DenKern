@@ -23,14 +23,14 @@ import { dispatchWorkflowEvent, DispatchError } from '../../../../../lib/workflo
 import type { WorkflowEventPayload, WorkflowStateResponse } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 export async function POST(
   req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<WorkflowStateResponse | { error: string; code?: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   // Parse and validate request body
   let body: unknown;

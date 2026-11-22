@@ -51,3 +51,7 @@ apps/*/package-lock.json
 prediction/artifacts/
 contracts/prediction/artifacts/
 packages/prediction-adapter/models/
+
+# Workspace build metadata
+*.tsbuildinfo
+.turbo/

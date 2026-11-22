@@ -78,7 +78,7 @@ export function generateToken(caseId: string): ConfirmationToken {
   writeFileSync(path, JSON.stringify(record, null, 2), 'utf-8');
   JSON.parse(readFileSync(path, 'utf-8')); // NTFS guard
 
-  console.log(`[DK-6B] Token generated  case=${caseId}  token=${record.token}  expires=${expiresAt.toISOString()}`);
+  console.log(`[DK-6B] Token generated  case=${caseId}  expires=${expiresAt.toISOString()}`);
   return record;
 }
 

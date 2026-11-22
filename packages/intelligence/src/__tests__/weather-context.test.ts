@@ -212,7 +212,7 @@ describe('WeatherContextAgent — relevance filtering', () => {
 
   it('excludes event when affected_ports does not match destination and no route match', async () => {
     const agent = new WeatherContextAgent([
-      makeEvent({ affected_ports: ['Rotterdam'], routes: [] }),
+      makeEvent({ affected_ports: ['Rotterdam'], routes: [], region: 'Rhine delta' }),
     ]);
     const signals = await agent.run(makeContext({ destination_port: 'Hamburg', route: 'Baltic route' }));
     expect(signals).toHaveLength(0);
@@ -275,9 +275,9 @@ describe('WeatherContextAgent — signal shape', () => {
   });
 
   it('omits estimated_additional_delay_days when not provided', async () => {
-    const agent = new WeatherContextAgent([
-      makeEvent({ event_id: 'TEST-NO-HOURS' })  // no estimated_impact_hours key,
-    ]);
+    const event = makeEvent({ event_id: 'TEST-NO-HOURS' });
+    delete event.estimated_impact_hours;
+    const agent = new WeatherContextAgent([event]);
     const [s] = await agent.run(makeContext());
     expect(s?.estimated_additional_delay_days).toBeUndefined();
   });
@@ -315,5 +315,13 @@ describe('WeatherContextAgent — fixture integration (Hamburg / CASE-001)', () 
       makeContext({ destination_port: 'Shanghai', route: 'Pacific route' })
     );
     expect(signals).toHaveLength(0);
+  });
+});
+
+
+describe('WeatherContextAgent — missing route', () => {
+  it('does not match an unrelated route against an empty context route', async () => {
+    const agent = new WeatherContextAgent([makeEvent({ affected_ports: [], routes: ['Rhine delta'], region: 'Rotterdam' })]);
+    expect(await agent.run(makeContext({ route: '' }))).toHaveLength(0);
   });
 });

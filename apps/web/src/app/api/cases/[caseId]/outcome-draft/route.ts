@@ -29,14 +29,14 @@ import { generateAndWriteOutcomeDraft } from '../../../../../lib/workflow/outcom
 import type { OutcomeDraft } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 export async function POST(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<OutcomeDraft | { error: string; code?: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   try {
     const draft = generateAndWriteOutcomeDraft(caseId);

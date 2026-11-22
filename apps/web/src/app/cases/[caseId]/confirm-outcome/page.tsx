@@ -30,17 +30,17 @@ import { ConfirmOutcomeForm } from './ConfirmOutcomeForm.js';
 import type { OutcomeDraft } from '@denkkern/types';
 
 interface PageProps {
-  params: { caseId: string };
-  searchParams: { token?: string };
+  params: Promise<{ caseId: string }>;
+  searchParams: Promise<{ token?: string }>;
 }
 
 function mockRoot(): string {
   return process.env['MOCK_ROOT'] ?? process.cwd();
 }
 
-export default function ConfirmOutcomePage({ params, searchParams }: PageProps) {
-  const { caseId } = params;
-  const token = searchParams.token ?? '';
+export default async function ConfirmOutcomePage({ params, searchParams }: PageProps) {
+  const { caseId } = await params;
+  const token = (await searchParams).token ?? '';
 
   // Server-side: read the outcome draft
   const draftPath   = join(mockRoot(), 'mock', 'cases', caseId, 'outcome-draft.json');

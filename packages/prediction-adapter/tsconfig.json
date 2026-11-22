@@ -6,11 +6,20 @@
     "rootDir": "./src",
     "composite": true,
     "paths": {
-      "@denkkern/types": ["../types/src/index.ts"]
+      "@denkkern/types": [
+        "../types/src/index.ts"
+      ]
     }
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../types" }
+    {
+      "path": "../types"
+    }
+  ],
+  "exclude": [
+    "src/**/__tests__/**"
   ]
 }

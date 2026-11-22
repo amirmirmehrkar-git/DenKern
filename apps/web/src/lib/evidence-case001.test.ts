@@ -24,10 +24,11 @@ import type { AgentContext } from '@denkkern/intelligence';
 
 // ── paths ────────────────────────────────────────────────────────────────────
 const HERE  = dirname(fileURLToPath(import.meta.url));
-const ROOT  = join(HERE, '..', '..', '..', '..', '..');
+const ROOT  = join(HERE, '..', '..', '..', '..');
 const ctx   = JSON.parse(readFileSync(join(ROOT, 'mock/cases/CASE-001/disruption-context.json'), 'utf-8'));
 const cfg   = JSON.parse(readFileSync(join(ROOT, 'config/scenario-defaults.json'), 'utf-8'));
-const today = new Date().toISOString().slice(0, 10);
+// Historical demo evidence uses its fixture date, not the machine's live clock.
+const today = '2026-06-04';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const expired = (s: ExternalRiskSignal) =>

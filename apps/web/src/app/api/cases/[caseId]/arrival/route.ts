@@ -37,7 +37,7 @@ import { join } from 'path';
 import type { DecisionRecord } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ export async function POST(
   req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<ArrivalResponse | { error: string; code?: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   // ── 1. Parse request body ─────────────────────────────────────────────────
 

@@ -904,7 +904,7 @@ export default function DecisionRoomPage() {
                   background: 'var(--status-medium-bg)', border: '1px solid var(--status-medium-border)',
                   fontSize: 10, color: 'var(--status-medium)', lineHeight: 1.4,
                 }}>
-                  You have selected <strong>{selectedCard.label}</strong> — not Lena's recommendation. The recommendation scored {recScore}/100.
+                  You have selected <strong>{selectedCard.label}</strong> — not Lena&apos;s recommendation. The recommendation scored {recScore}/100.
                 </div>
               )}
             </div>
