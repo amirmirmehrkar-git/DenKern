@@ -38,7 +38,7 @@ import { generateToken } from '../../../../../lib/workflow/confirmation-token.js
 import type { DecisionRecord, OutcomeDraft } from '@denkkern/types';
 
 interface RouteParams {
-  params: { caseId: string };
+  params: Promise<{ caseId: string }>;
 }
 
 function mockRoot(): string {
@@ -221,7 +221,7 @@ export async function POST(
   _req: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<NotificationResponse | { error: string; code?: string }>> {
-  const { caseId } = params;
+  const { caseId } = await params;
 
   // 1. Check prerequisites
   const draftPath  = caseFilePath(caseId, 'outcome-draft.json');
